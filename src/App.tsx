@@ -7,6 +7,11 @@ import VehiclesPage from './pages/VehiclesPage';
 import ServicesPage from './pages/ServicesPage';
 import NotificationsPage from './pages/NotificationsPage';
 import MapPage from './pages/MapPage';
+import StaffLayout from './layouts/StaffLayout';
+import StaffDashboard from './pages/staff/Dashboard';
+import StaffChat from './pages/staff/Chat';
+import StaffHistory from './pages/staff/History';
+import StaffProfile from './pages/staff/Profile';
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -37,6 +42,12 @@ export default function App() {
           <Route path="settings" element={<PlaceholderPage title="Cài Đặt Hệ Thống" />} />
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/partner" element={<StaffLayout />}>
+        <Route index element={<StaffDashboard />} />
+          <Route path="chat" element={<StaffChat />} />
+          <Route path="history" element={<StaffHistory />} />
+          <Route path="profile" element={<StaffProfile />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );
