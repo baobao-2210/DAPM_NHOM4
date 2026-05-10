@@ -7,6 +7,7 @@ import VehiclesPage from './pages/VehiclesPage';
 import ServicesPage from './pages/ServicesPage';
 import NotificationsPage from './pages/NotificationsPage';
 import MapPage from './pages/MapPage';
+import AdminUsersPage from './pages/admin/AdminUsersPage';
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -32,7 +33,7 @@ export default function App() {
           <Route path="vehicles" element={<VehiclesPage />} />
           <Route path="services" element={<ServicesPage />} />
           <Route path="reports" element={<PlaceholderPage title="Báo Cáo & Thống Kê" />} />
-          <Route path="users" element={<PlaceholderPage title="Quản Lý Tài Khoản" />} />
+          <Route path="users" element={<AdminUsersPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="settings" element={<PlaceholderPage title="Cài Đặt Hệ Thống" />} />
         </Route>
