@@ -1,4 +1,4 @@
-import { mockNotifications } from '../data/mockData';
+import { mockNotifications } from '../../data/mockData';
 import { Bell, CheckCheck, AlertTriangle, Info, CheckCircle } from 'lucide-react';
 
 const typeIcon = {

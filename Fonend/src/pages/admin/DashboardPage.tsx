@@ -3,7 +3,7 @@ import {
   Car, Wrench, ArrowRight, MapPin, Star
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { mockDashboardStats, mockRequests, mockStaff } from '../data/mockData';
+import { mockDashboardStats, mockRequests, mockStaff } from '../../data/mockData';
 
 const statusLabel: Record<string, string> = {
   pending: 'Chờ Xử Lý', accepted: 'Đã Tiếp Nhận', dispatched: 'Đang Đến',

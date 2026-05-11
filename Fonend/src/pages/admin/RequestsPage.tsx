@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Search, Filter, Plus, Eye, CheckCircle, XCircle, MapPin, Phone, Clock, AlertTriangle, Truck } from 'lucide-react';
-import { mockRequests } from '../data/mockData';
-import type { RescueRequest, RequestStatus } from '../types';
+import { mockRequests } from '../../data/mockData';
+import type { RescueRequest, RequestStatus } from '../../types';
 
 const problemLabels: Record<string, string> = {
   flat_tire: '🔧 Nổ Lốp', battery_dead: '🔋 Hết Bình', fuel_empty: '⛽ Hết Xăng',

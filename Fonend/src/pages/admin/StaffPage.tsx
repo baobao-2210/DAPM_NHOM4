@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Search, Plus, Star, Phone, Mail, MapPin, Briefcase, CheckCircle } from 'lucide-react';
-import { mockStaff } from '../data/mockData';
-import type { StaffStatus } from '../types';
+import { mockStaff } from '../../data/mockData';
+import type { StaffStatus } from '../../types';
 
 const statusLabel: Record<StaffStatus, string> = {
   available: 'Sẵn Sàng', busy: 'Đang Bận', offline: 'Ngoại Tuyến', on_break: 'Nghỉ Giải Lao',

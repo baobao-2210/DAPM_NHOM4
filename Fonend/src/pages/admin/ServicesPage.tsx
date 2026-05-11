@@ -1,4 +1,4 @@
-import { mockServices } from '../data/mockData';
+import { mockServices } from '../../data/mockData';
 import { Check, Star, Zap } from 'lucide-react';
 
 function formatCurrency(n: number) {

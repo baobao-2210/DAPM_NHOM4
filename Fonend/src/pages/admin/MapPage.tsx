@@ -1,5 +1,5 @@
 import { MapPin, Navigation, Zap } from 'lucide-react';
-import { mockRequests, mockStaff } from '../data/mockData';
+import { mockRequests, mockStaff } from '../../data/mockData';
 
 const statusClass: Record<string, string> = {
   pending: 'badge-warning', accepted: 'badge-info', dispatched: 'badge-info',

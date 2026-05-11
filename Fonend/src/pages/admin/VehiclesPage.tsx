@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Search, Plus, Car, Bike } from 'lucide-react';
-import { mockVehicles } from '../data/mockData';
+import { mockVehicles } from '../../data/mockData';
 
 const typeIcon: Record<string, React.ReactNode> = {
   car: <Car size={18} />, motorcycle: <Bike size={18} />, truck: <Car size={18} />, bus: <Car size={18} />,
