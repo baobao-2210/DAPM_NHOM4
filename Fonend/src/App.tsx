@@ -1,12 +1,12 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import DashboardLayout from './layouts/DashboardLayout';
-import DashboardPage from './pages/DashboardPage';
-import RequestsPage from './pages/RequestsPage';
-import StaffPage from './pages/StaffPage';
-import VehiclesPage from './pages/VehiclesPage';
-import ServicesPage from './pages/ServicesPage';
-import NotificationsPage from './pages/NotificationsPage';
-import MapPage from './pages/MapPage';
+import DashboardPage from './pages/admin/DashboardPage';
+import RequestsPage from './pages/admin/RequestsPage';
+import StaffPage from './pages/admin/StaffPage';
+import VehiclesPage from './pages/admin/VehiclesPage';
+import ServicesPage from './pages/admin/ServicesPage';
+import NotificationsPage from './pages/admin/NotificationsPage';
+import MapPage from './pages/admin/MapPage';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
 
 function PlaceholderPage({ title }: { title: string }) {

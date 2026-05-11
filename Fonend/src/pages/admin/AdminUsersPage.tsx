@@ -36,7 +36,6 @@ const TOTAL_ADMINS = 42;
 const TOTAL_STAFF = 156;
 const TOTAL_LOCKED = 8;
 const PAGE_SIZE = 4;
-
 // ===================== HELPERS =====================
 function getInitials(name: string) {
   return name.split(' ').slice(-2).map(w => w[0]).join('').toUpperCase();
