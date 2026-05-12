@@ -46,13 +46,13 @@ export function login(request: LoginRequest): Promise<{ success: boolean; messag
   });
 }
 
-export function registerCustomer(data: GuestRegisterData): Promise<{ success: boolean; message: string }> {
+export function registerCustomer(_data: GuestRegisterData): Promise<{ success: boolean; message: string }> {
   return new Promise((resolve) => {
     setTimeout(() => resolve({ success: true, message: 'Đăng ký thành công. Vui lòng kiểm tra email để xác nhận.' }), 500);
   });
 }
 
-export function forgotPassword(request: ForgotPasswordRequest): Promise<{ success: boolean; message: string }> {
+export function forgotPassword(_request: ForgotPasswordRequest): Promise<{ success: boolean; message: string }> {
   return new Promise((resolve) => {
     setTimeout(() => resolve({ success: true, message: 'Hướng dẫn đặt lại mật khẩu đã được gửi tới thông tin bạn cung cấp.' }), 500);
   });

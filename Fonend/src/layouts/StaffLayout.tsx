@@ -1,8 +1,14 @@
-import { Outlet, useLocation, Link } from 'react-router-dom';
-import { MapPin, Clock, MessageSquare, Settings, LogOut, Bell, User } from 'lucide-react';
+import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
+import { MapPin, Clock, MessageSquare, Settings, LogOut, Bell, User, AlertTriangle } from 'lucide-react';
 
 export default function StaffLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('partner_session');
+    navigate('/partner/login', { replace: true });
+  };
 
   const navItems = [
     { path: '/partner', icon: <MapPin size={20} />, label: 'Nhiệm vụ hiện tại' },
@@ -45,7 +51,7 @@ export default function StaffLayout() {
            <button className="btn w-full justify-center" style={{ background: '#1D4ED8', color: 'white', borderRadius: 8, padding: '12px' }}>
              <AlertTriangle size={16} /> Báo cáo sự cố
            </button>
-           <button className="flex items-center gap-2 mt-4 text-sm font-medium w-full px-4" style={{ color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer' }}>
+           <button onClick={handleLogout} className="flex items-center gap-2 mt-4 text-sm font-medium w-full px-4" style={{ color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer' }}>
              <LogOut size={18} /> Đăng xuất
            </button>
         </div>
@@ -70,6 +76,3 @@ export default function StaffLayout() {
     </div>
   );
 }
-
-// Khai báo icon dùng chung
-import { AlertTriangle } from 'lucide-react';
