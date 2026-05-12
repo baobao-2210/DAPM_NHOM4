@@ -1,119 +1,101 @@
 import { useState } from 'react';
-import { MapPin, Phone, CheckCircle, Navigation, Play, AlertTriangle, Truck, CheckSquare, Square, Upload } from 'lucide-react';
-import { mockRequests } from '../../data/mockData';
+import { MapPin, Phone, MessageSquare, CheckCircle, Send, User, AlertCircle, CheckSquare, Square } from 'lucide-react';
+import { useStaffData } from '../../hooks/useStaffQueries';
 
 export default function StaffDashboard() {
-  // Trạng thái màn hình: 'list' (Tìm cuốc) -> 'tracking' (Đang chạy) -> 'invoice' (Chốt đơn)
-  const [view, setView] = useState<'list' | 'tracking' | 'invoice'>('list');
-  const [activeRequest, setActiveRequest] = useState<any>(null);
+  const { activeTaskQuery, pendingQuery, actions } = useStaffData();
+  const [view, setView] = useState<'tracking' | 'invoice'>('tracking');
+  const [invoiceNote, setInvoiceNote] = useState('');
+  const [finalCost, setFinalCost] = useState(560000); // Giá trị mặc định
 
-  // Màn hình 1: Danh sách chờ (UC-21)
-  if (view === 'list') {
-    return (
-      <div className="animate-fade-in flex-col gap-4" style={{ maxWidth: 800, margin: '0 auto' }}>
-        <div className="page-header mb-2">
-          <h1>Yêu Cầu Gần Bạn</h1>
-          <p>Nhận nhiệm vụ để bắt đầu ca làm việc.</p>
-        </div>
-        {mockRequests.filter(r => r.status === 'pending').map(req => (
-          <div key={req.id} className="card hover:border-primary transition-all">
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <h3 style={{ fontSize: 18, color: 'var(--primary)' }}>Sự cố: {req.problemType}</h3>
-                <div className="text-muted text-sm mt-1">{req.customerName} • {req.vehicleModel}</div>
-              </div>
-              <div className="badge badge-warning">Cách 2.5 km</div>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-secondary mb-4">
-              <MapPin size={14} /> {req.location.address}
-            </div>
-            <button className="btn btn-primary w-full justify-center" onClick={() => {
-              setActiveRequest({ ...req, status: 'accepted' });
-              setView('tracking');
-            }}>
-              Tiếp Nhận Nhiệm Vụ
-            </button>
+  const activeRequest = activeTaskQuery.data;
+  const pendingList = pendingQuery.data || [];
+
+  if (activeTaskQuery.isLoading || pendingQuery.isLoading) {
+    return <div style={{ padding: 40, textAlign: 'center', color: '#64748B' }}>Đang đồng bộ dữ liệu hệ thống...</div>;
+  }
+
+  // ================= CHẾ ĐỘ 1: KHI ĐANG RẢNH - CHỜ NHẬN ĐƠN (UC-21, 22) =================
+  if (!activeRequest) {
+    if (pendingList.length === 0) {
+      return (
+        <div className="animate-fade-in" style={{ maxWidth: 800, margin: '40px auto', textAlign: 'center' }}>
+          <div style={{ background: 'white', padding: 48, borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <AlertCircle size={48} color="#94A3B8" style={{ margin: '0 auto 16px' }} />
+            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Chưa có yêu cầu cứu hộ</h2>
+            <p style={{ color: '#64748B' }}>Hệ thống đang quét các sự cố xung quanh khu vực của bạn. Vui lòng giữ ứng dụng mở.</p>
           </div>
-        ))}
+        </div>
+      );
+    }
+
+    return (
+      <div className="animate-fade-in" style={{ maxWidth: 800, margin: '0 auto' }}>
+        <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 20 }}>Yêu Cầu Đang Chờ ({pendingList.length})</h1>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {pendingList.map((req: any) => (
+            <div key={req.id} style={{ background: 'white', padding: 20, borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+              <div>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1D4ED8', marginBottom: 4 }}>{req.loaiSuCo || 'Sự cố khẩn cấp'}</h3>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#1E293B', marginBottom: 4 }}>Khách hàng: {req.tenKhachHang || 'Khách vãng lai'}</div>
+                <div style={{ fontSize: 13, color: '#64748B', display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={14}/> {req.diaChi || 'Không rõ địa chỉ'}</div>
+              </div>
+              <button 
+                onClick={() => actions.accept.mutate(req.id)}
+                disabled={actions.accept.isPending}
+                style={{ padding: '12px 24px', background: '#1D4ED8', color: 'white', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer' }}
+              >
+                {actions.accept.isPending ? 'Đang nhận...' : 'Nhận Nhiệm Vụ'}
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
-  // Màn hình 2: Đang xử lý & Cập nhật trạng thái (UC-23)
+  // ================= CHẾ ĐỘ 2: ĐANG LÀM NHIỆM VỤ - CẬP NHẬT TRẠNG THÁI (UC-23) =================
   if (view === 'tracking') {
-    const statusSteps = [
-      { key: 'accepted', label: 'Đã tiếp nhận', time: '14:25' },
-      { key: 'dispatched', label: 'Bắt đầu di chuyển', time: '14:30' },
-      { key: 'arrived', label: 'Đang đến hiện trường', time: 'Đang cập nhật...' },
-      { key: 'in_progress', label: 'Đang xử lý sự cố', time: '' },
-      { key: 'completed', label: 'Hoàn thành cứu hộ', time: '' },
-    ];
-    
-    const handleNextStatus = () => {
-      const order = ['accepted', 'dispatched', 'arrived', 'in_progress', 'completed'];
-      const nextIdx = order.indexOf(activeRequest.status) + 1;
-      if (nextIdx < order.length) {
-        if (order[nextIdx] === 'completed') setView('invoice');
-        else setActiveRequest({ ...activeRequest, status: order[nextIdx] });
-      }
-    };
-
     return (
-      <div className="grid-2 animate-fade-in" style={{ gridTemplateColumns: '1fr 380px', height: 'calc(100vh - 80px)', gap: 20 }}>
-        <div className="card" style={{ padding: 0, overflow: 'hidden', position: 'relative', background: '#1a1d26' }}>
-           <div className="badge badge-primary" style={{ position: 'absolute', top: 20, left: 20, zIndex: 10, padding: '8px 16px' }}>
-             <MapPin size={14} style={{ marginRight: 8 }} /> Khoảng cách: 2.4 km (8 phút)
-           </div>
-           <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-             <span className="text-muted">Bản đồ di chuyển hiển thị tại đây</span>
-           </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 24, height: '100%' }}>
+        <div style={{ background: '#1E293B', borderRadius: 16, position: 'relative', overflow: 'hidden' }}>
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8' }}>[Hệ thống Bản đồ GPS hiển thị tại đây]</div>
         </div>
 
-        <div className="flex-col gap-4" style={{ overflowY: 'auto' }}>
-          <div className="card">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="card-title">Thông tin khách hàng</h3>
-              <span className="badge badge-danger">CẦN HỖ TRỢ GẤP</span>
-            </div>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="avatar-placeholder" style={{ width: 44, height: 44 }}>{activeRequest.customerName.charAt(0)}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ background: 'white', borderRadius: 16, padding: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Thông tin khách hàng</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+              <div style={{ width: 48, height: 48, background: '#EFF6FF', color: '#1D4ED8', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}><User size={24}/></div>
               <div>
-                <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{activeRequest.customerName}</div>
-                <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{activeRequest.vehiclePlate}</div>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>{activeRequest.tenKhachHang || 'Khách hàng'}</div>
+                <div style={{ fontSize: 13, color: '#64748B' }}>SĐT: {activeRequest.soDienThoai || '09xx xxx xxx'}</div>
               </div>
             </div>
-            <div className="flex gap-2">
-              <button className="btn btn-secondary flex-1 justify-center"><Phone size={14} /> Gọi điện</button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button style={{ flex: 1, padding: 10, background: 'white', border: '1px solid #E2E8F0', borderRadius: 8, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, fontWeight: 500, color: '#1D4ED8', cursor: 'pointer' }}><Phone size={16} /> Gọi điện</button>
+              <button style={{ flex: 1, padding: 10, background: 'white', border: '1px solid #E2E8F0', borderRadius: 8, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, fontWeight: 500, color: '#1D4ED8', cursor: 'pointer' }}><MessageSquare size={16} /> Nhắn tin</button>
             </div>
           </div>
 
-          <div className="card">
-            <h3 className="card-title mb-4">Cập nhật quy trình</h3>
-            <div className="flex-col" style={{ position: 'relative', gap: 20 }}>
-              <div style={{ position: 'absolute', left: 11, top: 10, bottom: 10, width: 2, background: 'var(--border-strong)' }} />
-              {statusSteps.map((step, index) => {
-                const order = ['accepted', 'dispatched', 'arrived', 'in_progress', 'completed'];
-                const currentIdx = order.indexOf(activeRequest.status);
-                const isPassed = index <= currentIdx;
-                const isCurrent = index === currentIdx;
-                return (
-                  <div key={step.key} className="flex items-start gap-4" style={{ position: 'relative', zIndex: 1 }}>
-                    <div style={{ 
-                      width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      background: isCurrent ? 'var(--primary)' : isPassed ? 'var(--success)' : 'var(--bg-elevated)', color: 'white'
-                    }}>
-                      {isPassed && !isCurrent ? <CheckCircle size={14} /> : <div style={{ width: 8, height: 8, background: 'white', borderRadius: '50%' }} />}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: isCurrent ? 700 : 500, color: isCurrent ? 'var(--text-primary)' : 'var(--text-muted)' }}>{step.label}</div>
-                      <div style={{ fontSize: 12, color: isCurrent ? 'var(--primary-light)' : 'var(--text-secondary)' }}>{step.time}</div>
-                    </div>
-                  </div>
-                );
-              })}
+          <div style={{ background: 'white', borderRadius: 16, padding: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Trạng thái nhiệm vụ</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ padding: 12, background: '#EFF6FF', borderRadius: 8, border: '1px solid #BFDBFE' }}>
+                <div style={{ fontSize: 12, color: '#1D4ED8', fontWeight: 600, marginBottom: 4 }}>TÌNH TRẠNG HIỆN TẠI</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#1E3A8A' }}>{activeRequest.trangThaiHienTai === 'accepted' ? 'Đang di chuyển đến khách' : activeRequest.trangThaiHienTai}</div>
+              </div>
             </div>
-            <button className="btn btn-primary w-full justify-center mt-6" onClick={handleNextStatus} style={{ padding: 14 }}>
-               Cập nhật bước tiếp theo
+            
+            <button 
+              onClick={() => {
+                actions.updateStatus.mutate({ id: activeRequest.id, status: 'arrived' });
+                setView('invoice');
+              }} 
+              disabled={actions.updateStatus.isPending}
+              style={{ width: '100%', padding: 14, background: '#1D4ED8', color: 'white', borderRadius: 8, border: 'none', fontWeight: 600, marginTop: 24, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+            >
+              {actions.updateStatus.isPending ? 'Đang cập nhật...' : <><MapPin size={18} /> Xác nhận: Đã đến hiện trường</>}
             </button>
           </div>
         </div>
@@ -121,73 +103,69 @@ export default function StaffDashboard() {
     );
   }
 
-  // Màn hình 3: Xác nhận hoàn thành và tính phí (UC-24)
+  // ================= CHẾ ĐỘ 3: CHỐT HÓA ĐƠN VÀ HOÀN THÀNH (UC-24) =================
   return (
-    <div className="animate-fade-in flex-col gap-4" style={{ maxWidth: 1000, margin: '0 auto', paddingBottom: 40 }}>
-      <div className="page-header flex justify-between items-center mb-2">
+    <div className="animate-fade-in" style={{ maxWidth: 1000, margin: '0 auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
-          <h1>Xác nhận hoàn thành cứu hộ</h1>
-          <p>Kiểm tra thông tin nhiệm vụ và gửi hóa đơn.</p>
+          <h1 style={{ fontSize: 24, fontWeight: 800 }}>Xác nhận hoàn thành cứu hộ</h1>
+          <p style={{ color: '#64748B' }}>Kiểm tra thông tin chi tiết nhiệm vụ và chi phí trước khi gửi hóa đơn.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => { alert('Đã gửi hóa đơn hoàn thành!'); setView('list'); }}>
-          Xác nhận & Gửi hóa đơn
+        <button 
+          onClick={() => {
+            actions.complete.mutate({ id: activeRequest.id, finalCost: finalCost });
+            setView('tracking');
+          }} 
+          disabled={actions.complete.isPending}
+          style={{ padding: '12px 24px', background: '#10B981', color: 'white', border: 'none', borderRadius: 24, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+        >
+          {actions.complete.isPending ? 'Đang xử lý...' : <>Hoàn thành & Gửi báo cáo <Send size={16} /></>}
         </button>
       </div>
 
-      <div className="grid-2" style={{ gridTemplateColumns: '1fr 350px', gap: 20 }}>
-        <div className="flex-col gap-4">
-          <div className="card">
-            <h3 className="card-title mb-4">Tóm tắt nhiệm vụ</h3>
-            <div className="grid-2 mb-4">
-               <div>
-                 <div className="text-muted text-xs mb-1">KHÁCH HÀNG</div>
-                 <div className="font-bold">{activeRequest.customerName}</div>
-               </div>
-               <div>
-                 <div className="text-muted text-xs mb-1">PHƯƠNG TIỆN</div>
-                 <div className="font-bold">{activeRequest.vehicleModel}</div>
-               </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: 24 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ background: 'white', borderRadius: 16, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>Thông tin hóa đơn</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+              <div><div style={{ fontSize: 11, fontWeight: 600, color: '#64748B' }}>KHÁCH HÀNG</div><div style={{ fontSize: 15, fontWeight: 700 }}>{activeRequest.tenKhachHang}</div></div>
+              <div><div style={{ fontSize: 11, fontWeight: 600, color: '#64748B' }}>SỰ CỐ</div><div style={{ fontSize: 15, fontWeight: 700 }}>{activeRequest.loaiSuCo || 'Sửa chữa'}</div></div>
             </div>
-            <div className="flex justify-between items-center bg-elevated p-3 rounded-md" style={{ background: 'var(--bg-elevated)', borderRadius: 8 }}>
-               <div className="text-center"><div className="text-muted text-xs">TỔNG QUÃNG ĐƯỜNG</div><div className="font-bold text-lg text-primary">12.5 km</div></div>
-               <div className="text-center"><div className="text-muted text-xs">THỜI GIAN THỰC HIỆN</div><div className="font-bold text-lg text-primary">45 phút</div></div>
+            <div>
+               <div style={{ fontSize: 12, fontWeight: 600, color: '#64748B', marginBottom: 8 }}>CHI PHÍ THỰC TẾ (VNĐ)</div>
+               <input 
+                  type="number" 
+                  value={finalCost} 
+                  onChange={(e) => setFinalCost(Number(e.target.value))}
+                  style={{ width: '100%', padding: 12, fontSize: 18, fontWeight: 700, borderRadius: 8, border: '1px solid #CBD5E1' }} 
+               />
             </div>
           </div>
 
-          <div className="card">
-            <h3 className="card-title mb-4">Ghi chú tình trạng xe sau cứu hộ</h3>
-            <div className="grid-2 mb-4">
-              <div className="flex items-center gap-2 p-2 border rounded-md" style={{ borderColor: 'var(--border)' }}><CheckSquare size={18} className="text-primary"/> Xe đã nổ máy bình thường</div>
-              <div className="flex items-center gap-2 p-2 border rounded-md" style={{ borderColor: 'var(--border)' }}><Square size={18} className="text-muted"/> Cần thay ắc quy mới</div>
-              <div className="flex items-center gap-2 p-2 border rounded-md" style={{ borderColor: 'var(--border)' }}><CheckSquare size={18} className="text-primary"/> Đã kiểm tra hệ thống sạc</div>
-              <div className="flex items-center gap-2 p-2 border rounded-md" style={{ borderColor: 'var(--border)' }}><Square size={18} className="text-muted"/> Hỗ trợ di chuyển về Gara</div>
-            </div>
-            <textarea className="form-input" rows={3} placeholder="Nhập thêm ghi chú chi tiết..." />
+          <div style={{ background: 'white', borderRadius: 16, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Ghi chú tình trạng</h3>
+            <textarea 
+              value={invoiceNote}
+              onChange={(e) => setInvoiceNote(e.target.value)}
+              style={{ width: '100%', padding: 16, background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 12, outline: 'none', resize: 'none' }} 
+              rows={4} 
+              placeholder="Ghi chú chi tiết kết quả sửa chữa..." 
+            />
           </div>
         </div>
 
-        <div className="flex-col gap-4">
-          <div className="card" style={{ border: '1px solid var(--primary)' }}>
-             <h3 className="card-title mb-4">Chi tiết hóa đơn</h3>
-             <div className="flex justify-between text-sm mb-2"><span className="text-secondary">Phí dịch vụ cơ bản</span><span>350.000đ</span></div>
-             <div className="flex justify-between text-sm mb-4"><span className="text-secondary">Phí di chuyển (12.5km)</span><span>125.000đ</span></div>
-             <div className="divider" />
-             <div className="flex justify-between text-sm mb-2"><span className="text-secondary">Phụ phí ban đêm</span><span>50.000đ</span></div>
-             <div className="divider" />
-             <div className="flex justify-between items-center mt-4">
-                <span className="text-muted">TỔNG THANH TOÁN</span>
-                <span className="text-2xl font-bold text-primary">525.000đ</span>
-             </div>
+        <div style={{ background: 'white', borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', height: 'fit-content' }}>
+          <div style={{ background: '#1D4ED8', padding: '20px 24px', color: 'white' }}>
+            <h3 style={{ fontSize: 18, fontWeight: 700 }}>Tổng kết</h3>
           </div>
-          <div className="card">
-             <h3 className="card-title mb-4">Hình ảnh minh chứng</h3>
-             <div className="flex gap-2">
-                <div style={{ width: 80, height: 80, background: 'var(--bg-elevated)', borderRadius: 8 }} />
-                <div className="flex-col items-center justify-center" style={{ width: 80, height: 80, border: '1px dashed var(--border-strong)', borderRadius: 8, color: 'var(--text-muted)' }}>
-                   <Upload size={20} />
-                   <span style={{ fontSize: 10, marginTop: 4 }}>Thêm ảnh</span>
-                </div>
-             </div>
+          <div style={{ padding: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+              <span style={{ color: '#475569', fontWeight: 600 }}>TỔNG CẦN THU</span>
+              <span style={{ fontSize: 24, fontWeight: 800, color: '#1D4ED8' }}>{new Intl.NumberFormat('vi-VN').format(finalCost)} ₫</span>
+            </div>
+            <div style={{ background: '#FEF9C3', padding: '12px 16px', borderRadius: 8, fontSize: 13, color: '#854D0E', fontWeight: 500 }}>
+              Tiền thu trực tiếp từ khách hàng.
+            </div>
           </div>
         </div>
       </div>

@@ -13,6 +13,10 @@ import ServicesPage from './pages/admin/ServicesPage';
 import NotificationsPage from './pages/admin/NotificationsPage';
 import MapPage from './pages/admin/MapPage';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'; 
+import { Toaster } from 'react-hot-toast'; 
+
+const queryClient = new QueryClient();
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -26,30 +30,33 @@ function PlaceholderPage({ title }: { title: string }) {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<DashboardLayout />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="map" element={<MapPage />} />
-          <Route path="requests" element={<RequestsPage />} />
-          <Route path="requests/:id" element={<RequestsPage />} />
-          <Route path="staff" element={<StaffPage />} />
-          <Route path="vehicles" element={<VehiclesPage />} />
-          <Route path="services" element={<ServicesPage />} />
-          <Route path="reports" element={<PlaceholderPage title="Báo Cáo & Thống Kê" />} />
-          <Route path="users" element={<AdminUsersPage />} />
-          <Route path="notifications" element={<NotificationsPage />} />
-          <Route path="settings" element={<PlaceholderPage title="Cài Đặt Hệ Thống" />} />
-        </Route>
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/partner" element={<StaffLayout />}>
-        <Route index element={<StaffDashboard />} />
-          <Route path="chat" element={<StaffChat />} />
-          <Route path="history" element={<StaffHistory />} />
-          <Route path="profile" element={<StaffProfile />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <Toaster position="top-right" />
+        <Routes>
+          <Route path="/" element={<DashboardLayout />}>
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="map" element={<MapPage />} />
+            <Route path="requests" element={<RequestsPage />} />
+            <Route path="requests/:id" element={<RequestsPage />} />
+            <Route path="staff" element={<StaffPage />} />
+            <Route path="vehicles" element={<VehiclesPage />} />
+            <Route path="services" element={<ServicesPage />} />
+            <Route path="reports" element={<PlaceholderPage title="Báo Cáo & Thống Kê" />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="notifications" element={<NotificationsPage />} />
+            <Route path="settings" element={<PlaceholderPage title="Cài Đặt Hệ Thống" />} />
+          </Route>
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/partner" element={<StaffLayout />}>
+            <Route index element={<StaffDashboard />} />
+            <Route path="chat" element={<StaffChat />} />
+            <Route path="history" element={<StaffHistory />} />
+            <Route path="profile" element={<StaffProfile />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }
