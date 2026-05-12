@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MapPin, Phone, MessageSquare, CheckCircle, Send, User, AlertCircle, CheckSquare, Square } from 'lucide-react';
+import { MapPin, Phone, MessageSquare, Send, User, AlertCircle } from 'lucide-react';
 import { useStaffData } from '../../hooks/useStaffQueries';
 
 export default function StaffDashboard() {

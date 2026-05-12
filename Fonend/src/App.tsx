@@ -1,14 +1,12 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'react-hot-toast';
+
 import DashboardLayout from './layouts/DashboardLayout';
-<<<<<<< HEAD
 import StaffLayout from './layouts/StaffLayout';
-import StaffDashboard from './pages/staff/Dashboard';
-import StaffChat from './pages/staff/Chat';
-import StaffHistory from './pages/staff/History';
-import StaffProfile from './pages/staff/Profile';
-=======
 import GuestLayout from './layouts/GuestLayout';
->>>>>>> 7c5c2f7ec3764d73ac4a925d584229101f7b9208
+
+// Admin pages
 import DashboardPage from './pages/admin/DashboardPage';
 import RequestsPage from './pages/admin/RequestsPage';
 import StaffPage from './pages/admin/StaffPage';
@@ -17,19 +15,24 @@ import ServicesPage from './pages/admin/ServicesPage';
 import NotificationsPage from './pages/admin/NotificationsPage';
 import MapPage from './pages/admin/MapPage';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
-<<<<<<< HEAD
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'; 
-import { Toaster } from 'react-hot-toast'; 
 
-const queryClient = new QueryClient();
-=======
+// Guest pages
 import HomePage from './pages/guest/HomePage';
 import ServiceListPage from './pages/guest/ServiceListPage';
 import ServiceDetailPage from './pages/guest/ServiceDetailPage';
 import RegisterPage from './pages/guest/RegisterPage';
 import LoginPage from './pages/guest/LoginPage';
 import ForgotPasswordPage from './pages/guest/ForgotPasswordPage';
->>>>>>> 7c5c2f7ec3764d73ac4a925d584229101f7b9208
+
+// Staff pages
+import StaffLoginPage from './pages/staff/LoginPage';
+import StaffDashboard from './pages/staff/Dashboard';
+import StaffChat from './pages/staff/Chat';
+import StaffHistory from './pages/staff/History';
+import StaffProfile from './pages/staff/Profile';
+import StaffPrivateRoute from './components/StaffPrivateRoute';
+
+const queryClient = new QueryClient();
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -43,13 +46,23 @@ function PlaceholderPage({ title }: { title: string }) {
 
 export default function App() {
   return (
-<<<<<<< HEAD
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Toaster position="top-right" />
         <Routes>
-          <Route path="/" element={<DashboardLayout />}>
-            <Route index element={<Navigate to="/dashboard" replace />} />
+          {/* Guest routes */}
+          <Route element={<GuestLayout />}>
+            <Route index element={<HomePage />} />
+            <Route path="services" element={<ServiceListPage />} />
+            <Route path="services/:id" element={<ServiceDetailPage />} />
+            <Route path="login" element={<LoginPage />} />
+            <Route path="register" element={<RegisterPage />} />
+            <Route path="forgot-password" element={<ForgotPasswordPage />} />
+          </Route>
+
+          {/* Admin routes */}
+          <Route path="/admin" element={<DashboardLayout />}>
+            <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="map" element={<MapPage />} />
             <Route path="requests" element={<RequestsPage />} />
@@ -62,46 +75,25 @@ export default function App() {
             <Route path="notifications" element={<NotificationsPage />} />
             <Route path="settings" element={<PlaceholderPage title="Cài Đặt Hệ Thống" />} />
           </Route>
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/partner" element={<StaffLayout />}>
-            <Route index element={<StaffDashboard />} />
-            <Route path="chat" element={<StaffChat />} />
-            <Route path="history" element={<StaffHistory />} />
-            <Route path="profile" element={<StaffProfile />} />
+
+          {/* Staff / Partner routes */}
+          {/* Login - không cần xác thực */}
+          <Route path="/partner/login" element={<StaffLoginPage />} />
+
+          {/* Các trang protected - cần đăng nhập */}
+          <Route element={<StaffPrivateRoute />}>
+            <Route path="/partner" element={<StaffLayout />}>
+              <Route index element={<StaffDashboard />} />
+              <Route path="chat" element={<StaffChat />} />
+              <Route path="history" element={<StaffHistory />} />
+              <Route path="profile" element={<StaffProfile />} />
+            </Route>
           </Route>
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>
-=======
-    <BrowserRouter>
-      <Routes>
-        <Route element={<GuestLayout />}>
-          <Route index element={<HomePage />} />
-          <Route path="services" element={<ServiceListPage />} />
-          <Route path="services/:id" element={<ServiceDetailPage />} />
-          <Route path="login" element={<LoginPage />} />
-          <Route path="register" element={<RegisterPage />} />
-          <Route path="forgot-password" element={<ForgotPasswordPage />} />
-        </Route>
-
-        <Route path="/" element={<DashboardLayout />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="map" element={<MapPage />} />
-          <Route path="requests" element={<RequestsPage />} />
-          <Route path="requests/:id" element={<RequestsPage />} />
-          <Route path="staff" element={<StaffPage />} />
-          <Route path="vehicles" element={<VehiclesPage />} />
-          <Route path="services" element={<ServicesPage />} />
-          <Route path="reports" element={<PlaceholderPage title="Báo Cáo & Thống Kê" />} />
-          <Route path="users" element={<AdminUsersPage />} />
-          <Route path="notifications" element={<NotificationsPage />} />
-          <Route path="settings" element={<PlaceholderPage title="Cài Đặt Hệ Thống" />} />
-        </Route>
-
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
->>>>>>> 7c5c2f7ec3764d73ac4a925d584229101f7b9208
   );
 }

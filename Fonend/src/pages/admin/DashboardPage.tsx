@@ -1,6 +1,6 @@
 import {
   AlertTriangle, Users, CheckCircle, Clock, TrendingUp, TrendingDown,
-  Car, Wrench, ArrowRight, MapPin, Star
+  Car, ArrowRight, MapPin, Star
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { mockDashboardStats, mockRequests, mockStaff } from '../../data/mockData';

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { getGuestServiceById, getGuestServices } from '../../services/guestService';
 import type { ServicePackage } from '../../types';
-import { ArrowRight, PhoneCall, Sparkles } from 'lucide-react';
+import { ArrowRight, Sparkles } from 'lucide-react';
 
 function formatCurrency(n: number) {
   return new Intl.NumberFormat('vi-VN').format(n) + 'đ';
