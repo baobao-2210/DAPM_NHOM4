@@ -9,31 +9,36 @@ const statusLabel: Record<string, string> = {
   pending: 'Chờ Xử Lý', accepted: 'Đã Tiếp Nhận', dispatched: 'Đang Đến',
   in_progress: 'Đang Xử Lý', completed: 'Hoàn Thành', cancelled: 'Đã Hủy',
 };
-const statusClass: Record<string, string> = {
-  pending: 'badge-warning', accepted: 'badge-info', dispatched: 'badge-info',
-  in_progress: 'badge-primary', completed: 'badge-success', cancelled: 'badge-muted',
+const statusBadge: Record<string, string> = {
+  pending: 'warning', accepted: 'info', dispatched: 'info',
+  in_progress: 'primary', completed: 'success', cancelled: 'muted',
 };
-const priorityClass: Record<string, string> = {
-  low: 'badge-muted', medium: 'badge-info', high: 'badge-warning', critical: 'badge-danger',
+const priorityBadge: Record<string, string> = {
+  low: 'muted', medium: 'info', high: 'warning', critical: 'danger',
 };
-const staffStatusClass: Record<string, string> = {
+const staffDot: Record<string, string> = {
   available: 'online', busy: 'busy', offline: 'offline', on_break: 'busy',
 };
 const staffStatusLabel: Record<string, string> = {
-  available: 'Sẵn Sàng', busy: 'Đang Bận', offline: 'Ngoại Tuyến', on_break: 'Nghỉ Giải Lao',
+  available: 'Sẵn Sàng', busy: 'Đang Bận', offline: 'Ngoại Tuyến', on_break: 'Nghỉ',
 };
 
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+function fmtCurrency(n: number) {
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
 }
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins} phút trước`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs} giờ trước`;
-  return `${Math.floor(hrs / 24)} ngày trước`;
+function timeAgo(d: string) {
+  const m = Math.floor((Date.now() - new Date(d).getTime()) / 60000);
+  if (m < 60) return `${m} phút trước`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} giờ trước`;
+  return `${Math.floor(h / 24)} ngày trước`;
 }
+
+const problemMap: Record<string, string> = {
+  flat_tire: 'Nổ Lốp', battery_dead: 'Hết Bình', fuel_empty: 'Hết Xăng',
+  engine_failure: 'Hỏng Máy', towing: 'Kéo Xe', lockout: 'Khóa Xe',
+  accident: 'Tai Nạn', other: 'Khác',
+};
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -42,64 +47,42 @@ export default function DashboardPage() {
   const topStaff = mockStaff.slice(0, 4);
 
   const statCards = [
-    {
-      label: 'Tổng Yêu Cầu', value: stats.totalRequests.toLocaleString(),
-      icon: AlertTriangle, color: 'var(--primary)', bg: 'rgba(255,107,43,0.12)',
-      change: '+12%', trend: 'up',
-    },
-    {
-      label: 'Đang Chờ Xử Lý', value: stats.pendingRequests,
-      icon: Clock, color: 'var(--warning)', bg: 'rgba(245,158,11,0.12)',
-      change: '-3', trend: 'down',
-    },
-    {
-      label: 'Hoàn Thành Hôm Nay', value: stats.completedToday,
-      icon: CheckCircle, color: 'var(--success)', bg: 'rgba(34,197,94,0.12)',
-      change: '+8', trend: 'up',
-    },
-    {
-      label: 'Nhân Viên Sẵn Sàng', value: `${stats.availableStaff}/${stats.totalStaff}`,
-      icon: Users, color: 'var(--info)', bg: 'rgba(59,130,246,0.12)',
-      change: '+2', trend: 'up',
-    },
-    {
-      label: 'Doanh Thu Tháng', value: formatCurrency(stats.totalRevenue).replace('₫', 'đ'),
-      icon: TrendingUp, color: '#A855F7', bg: 'rgba(168,85,247,0.12)',
-      change: '+18%', trend: 'up',
-    },
-    {
-      label: 'T.Gian Phản Hồi TB', value: `${stats.avgResponseTime} phút`,
-      icon: Car, color: '#06B6D4', bg: 'rgba(6,182,212,0.12)',
-      change: '-2 phút', trend: 'down',
-    },
+    { label: 'Tổng Yêu Cầu', value: stats.totalRequests.toLocaleString(), icon: AlertTriangle, color: '#003fb1', bg: 'rgba(0,63,177,0.1)', change: '+12%', trend: 'up' },
+    { label: 'Đang Chờ Xử Lý', value: stats.pendingRequests, icon: Clock, color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', change: '-3', trend: 'down' },
+    { label: 'Hoàn Thành Hôm Nay', value: stats.completedToday, icon: CheckCircle, color: '#10b981', bg: 'rgba(16,185,129,0.1)', change: '+8', trend: 'up' },
+    { label: 'Nhân Viên Sẵn Sàng', value: `${stats.availableStaff}/${stats.totalStaff}`, icon: Users, color: '#3b82f6', bg: 'rgba(59,130,246,0.1)', change: '+2', trend: 'up' },
+    { label: 'Doanh Thu Tháng', value: fmtCurrency(stats.totalRevenue).replace('₫', 'đ'), icon: TrendingUp, color: '#a855f7', bg: 'rgba(168,85,247,0.1)', change: '+18%', trend: 'up' },
+    { label: 'T.Gian Phản Hồi TB', value: `${stats.avgResponseTime} phút`, icon: Car, color: '#06b6d4', bg: 'rgba(6,182,212,0.1)', change: '-2 phút', trend: 'down' },
   ];
 
   return (
-    <div className="animate-fade-in">
-      {/* Page header */}
-      <div className="page-header">
-        <div className="page-header-left">
-          <h1>Xin chào, Admin 👋</h1>
-          <p>Đây là tổng quan hoạt động hệ thống hỗ trợ xe hôm nay.</p>
+    <div>
+      {/* Header */}
+      <div className="adm-page-header">
+        <div>
+          <div className="adm-breadcrumb"><span>Hệ thống</span><span>/</span><span className="active">Dashboard</span></div>
+          <h1 className="adm-page-title">Xin chào, Admin 👋</h1>
+          <p className="adm-page-subtitle">Tổng quan hoạt động hệ thống hỗ trợ xe hôm nay.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => navigate('/requests')}>
-          <AlertTriangle size={16} />
-          Xem Yêu Cầu
+        <button className="adm-btn primary" onClick={() => navigate('/admin/requests')}>
+          <AlertTriangle size={15} /> Xem Yêu Cầu
         </button>
       </div>
 
-      {/* Stats Grid */}
-      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
+      {/* Stats */}
+      <div className="adm-stats-grid" style={{ gridTemplateColumns: 'repeat(3,1fr)', marginBottom: 24 }}>
         {statCards.map((s, i) => {
           const Icon = s.icon;
           return (
-            <div key={i} className="stat-card" style={{ '--stat-color': s.color, '--stat-bg': s.bg } as React.CSSProperties}>
-              <div className="stat-icon"><Icon size={22} /></div>
-              <div className="stat-info">
-                <div className="stat-value">{s.value}</div>
-                <div className="stat-label">{s.label}</div>
-                <div className={`stat-change ${s.trend}`}>
-                  {s.trend === 'up' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+            <div key={i} className="adm-stat-card">
+              <div className="adm-stat-icon" style={{ background: s.bg, color: s.color }}>
+                <Icon size={22} />
+              </div>
+              <div>
+                <div className="adm-stat-value">{s.value}</div>
+                <div className="adm-stat-label">{s.label}</div>
+                <div className={`adm-stat-trend ${s.trend}`}>
+                  {s.trend === 'up' ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
                   {s.change} so với hôm qua
                 </div>
               </div>
@@ -111,61 +94,48 @@ export default function DashboardPage() {
       {/* Main grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20 }}>
         {/* Recent Requests */}
-        <div className="card">
-          <div className="card-header">
+        <div className="adm-card">
+          <div className="adm-card-header">
             <div>
-              <div className="card-title">Yêu Cầu Gần Đây</div>
-              <div className="card-subtitle">Các yêu cầu cứu hộ mới nhất</div>
+              <div className="adm-card-title">Yêu Cầu Gần Đây</div>
+              <div className="adm-card-subtitle">Các yêu cầu cứu hộ mới nhất</div>
             </div>
-            <button className="btn btn-secondary btn-sm" onClick={() => navigate('/requests')}>
-              Xem tất cả <ArrowRight size={14} />
+            <button className="adm-btn secondary sm" onClick={() => navigate('/admin/requests')}>
+              Xem tất cả <ArrowRight size={13} />
             </button>
           </div>
-          <div className="table-container" style={{ border: 'none' }}>
-            <table className="data-table">
+          <div className="adm-table-wrap">
+            <table className="adm-table">
               <thead>
                 <tr>
-                  <th>Khách Hàng</th>
-                  <th>Sự Cố</th>
-                  <th>Địa Điểm</th>
-                  <th>Ưu Tiên</th>
-                  <th>Trạng Thái</th>
-                  <th>Thời Gian</th>
+                  <th>Khách Hàng</th><th>Sự Cố</th><th>Địa Điểm</th>
+                  <th>Ưu Tiên</th><th>Trạng Thái</th><th>Thời Gian</th>
                 </tr>
               </thead>
               <tbody>
                 {recentRequests.map(req => (
-                  <tr key={req.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/requests/${req.id}`)}>
+                  <tr key={req.id} style={{ cursor: 'pointer' }} onClick={() => navigate('/admin/requests')}>
                     <td>
-                      <div className="flex items-center gap-2">
-                        <div className="avatar-placeholder" style={{ width: 32, height: 32, fontSize: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div className="adm-avatar" style={{ width: 34, height: 34, background: 'linear-gradient(135deg,#003fb1,#1e62e6)', fontSize: 12 }}>
                           {req.customerName.charAt(0)}
                         </div>
                         <div>
-                          <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 13 }}>{req.customerName}</div>
-                          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{req.vehiclePlate}</div>
+                          <div style={{ fontWeight: 700, color: '#191c1e', fontSize: 13 }}>{req.customerName}</div>
+                          <div style={{ fontSize: 11, color: '#737686' }}>{req.vehiclePlate}</div>
                         </div>
                       </div>
                     </td>
-                    <td style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
-                      {req.problemType === 'flat_tire' && 'Nổ Lốp'}
-                      {req.problemType === 'battery_dead' && 'Hết Bình'}
-                      {req.problemType === 'fuel_empty' && 'Hết Xăng'}
-                      {req.problemType === 'engine_failure' && 'Hỏng Máy'}
-                      {req.problemType === 'towing' && 'Kéo Xe'}
-                      {req.problemType === 'lockout' && 'Khóa Xe'}
-                      {req.problemType === 'accident' && 'Tai Nạn'}
-                      {req.problemType === 'other' && 'Khác'}
-                    </td>
+                    <td style={{ fontWeight: 600, color: '#191c1e', fontSize: 13 }}>{problemMap[req.problemType] || req.problemType}</td>
                     <td>
-                      <div className="flex items-center gap-1" style={{ fontSize: 12 }}>
-                        <MapPin size={12} style={{ color: 'var(--primary)', flexShrink: 0 }} />
-                        <span className="truncate" style={{ maxWidth: 160 }}>{req.location.address}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12 }}>
+                        <MapPin size={12} style={{ color: '#003fb1', flexShrink: 0 }} />
+                        <span style={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{req.location.address}</span>
                       </div>
                     </td>
-                    <td><span className={`badge ${priorityClass[req.priority]}`}>{req.priority.toUpperCase()}</span></td>
-                    <td><span className={`badge ${statusClass[req.status]}`}>{statusLabel[req.status]}</span></td>
-                    <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{timeAgo(req.createdAt)}</td>
+                    <td><span className={`adm-badge ${priorityBadge[req.priority]}`}>{req.priority.toUpperCase()}</span></td>
+                    <td><span className={`adm-badge ${statusBadge[req.status]}`}>{statusLabel[req.status]}</span></td>
+                    <td style={{ fontSize: 12, color: '#737686' }}>{timeAgo(req.createdAt)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -173,62 +143,61 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Right column */}
+        {/* Right col */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {/* Staff Status */}
-          <div className="card">
-            <div className="card-header">
-              <div className="card-title">Nhân Viên</div>
-              <button className="btn btn-ghost btn-sm" onClick={() => navigate('/staff')}>
+          {/* Staff */}
+          <div className="adm-card">
+            <div className="adm-card-header">
+              <div className="adm-card-title">Nhân Viên</div>
+              <button className="adm-btn ghost sm" onClick={() => navigate('/admin/staff')}>
                 <ArrowRight size={14} />
               </button>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {topStaff.map(s => (
-                <div key={s.id} className="flex items-center gap-3">
-                  <div className="avatar-placeholder" style={{ width: 38, height: 38, fontSize: 13, position: 'relative', flexShrink: 0 }}>
-                    {s.name.charAt(0)}
-                    <span
-                      className={`status-dot ${staffStatusClass[s.status]}`}
-                      style={{ position: 'absolute', bottom: 1, right: 1, width: 10, height: 10, border: '2px solid var(--bg-card)' }}
-                    />
+            <div className="adm-card-body" style={{ paddingTop: 16 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {topStaff.map(s => (
+                  <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ position: 'relative', flexShrink: 0 }}>
+                      <div className="adm-avatar" style={{ width: 38, height: 38, background: 'linear-gradient(135deg,#003fb1,#3b82f6)', fontSize: 13 }}>
+                        {s.name.split(' ').pop()?.[0]}
+                      </div>
+                      <span className={`adm-status-dot ${staffDot[s.status]}`} style={{ position: 'absolute', bottom: 0, right: 0, width: 10, height: 10, border: '2px solid #f0f4ff', borderRadius: '999px', display: 'block' }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: '#191c1e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</div>
+                      <div style={{ fontSize: 11, color: '#737686' }}>{staffStatusLabel[s.status]}</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 12, fontWeight: 700, color: '#d97706' }}>
+                      <Star size={11} fill="currentColor" /> {s.rating}
+                    </div>
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }} className="truncate">{s.name}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{staffStatusLabel[s.status]}</div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* System Status */}
+          <div className="adm-card">
+            <div className="adm-card-header">
+              <div className="adm-card-title">Trạng Thái Hệ Thống</div>
+            </div>
+            <div className="adm-card-body" style={{ paddingTop: 16 }}>
+              {[
+                { label: 'Yêu cầu đang xử lý', value: stats.activeRequests, max: 40, color: '#003fb1' },
+                { label: 'Yêu cầu chờ', value: stats.pendingRequests, max: 40, color: '#f59e0b' },
+                { label: 'Nhân viên sẵn sàng', value: stats.availableStaff, max: stats.totalStaff, color: '#10b981' },
+              ].map((item, i) => (
+                <div key={i} style={{ marginBottom: i < 2 ? 16 : 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 12 }}>
+                    <span style={{ color: '#737686', fontWeight: 600 }}>{item.label}</span>
+                    <span style={{ fontWeight: 800, color: item.color }}>{item.value}</span>
                   </div>
-                  <div className="flex items-center gap-1" style={{ fontSize: 12, color: 'var(--accent)' }}>
-                    <Star size={11} fill="currentColor" />
-                    {s.rating}
+                  <div className="adm-progress-bar">
+                    <div className="adm-progress-fill" style={{ width: `${Math.min((item.value / item.max) * 100, 100)}%`, background: item.color }} />
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Quick Stats */}
-          <div className="card">
-            <div className="card-title" style={{ marginBottom: 16 }}>Trạng Thái Hệ Thống</div>
-            {[
-              { label: 'Yêu cầu đang xử lý', value: stats.activeRequests, color: 'var(--primary)' },
-              { label: 'Yêu cầu chờ', value: stats.pendingRequests, color: 'var(--warning)' },
-              { label: 'Nhân viên sẵn sàng', value: stats.availableStaff, color: 'var(--success)' },
-            ].map((item, i) => (
-              <div key={i} style={{ marginBottom: 12 }}>
-                <div className="flex justify-between" style={{ marginBottom: 6, fontSize: 13 }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>{item.label}</span>
-                  <span style={{ fontWeight: 700, color: item.color }}>{item.value}</span>
-                </div>
-                <div style={{ height: 4, background: 'var(--bg-elevated)', borderRadius: 4 }}>
-                  <div style={{
-                    height: '100%', borderRadius: 4,
-                    background: item.color,
-                    width: `${Math.min((item.value / 40) * 100, 100)}%`,
-                    transition: 'width 1s ease'
-                  }} />
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       </div>

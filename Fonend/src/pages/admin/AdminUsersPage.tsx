@@ -1,21 +1,15 @@
 import { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
-
 import {
   Users, Shield, UserCheck, UserX, Search, SlidersHorizontal,
   ChevronLeft, ChevronRight, UserPlus, MoreHorizontal,
-  Edit2, Trash2, Lock, Unlock, Eye, TrendingUp
+  Edit2, Trash2, Lock, Unlock, Eye, TrendingUp, X
 } from 'lucide-react';
 
-// ===================== DATA =====================
 interface AdminUser {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
+  id: number; name: string; email: string; phone: string;
   role: 'admin' | 'staff' | 'customer' | 'guest';
-  status: 'active' | 'locked';
-  registeredAt: string;
+  status: 'active' | 'locked'; registeredAt: string;
 }
 
 const mockAdminUsers: AdminUser[] = [
@@ -34,40 +28,28 @@ const mockAdminUsers: AdminUser[] = [
   { id: 2775, name: 'Người dùng Khách',  email: 'guest@example.com',       phone: '0988888888', role: 'guest',    status: 'active', registeredAt: '12/07/2024' },
 ];
 
-const TOTAL_USERS = 1284;
-const TOTAL_ADMINS = 42;
-const TOTAL_STAFF = 156;
-const TOTAL_LOCKED = 8;
-const PAGE_SIZE = 4;
-// ===================== HELPERS =====================
+const TOTAL_USERS = 1284; const TOTAL_ADMINS = 42; const TOTAL_STAFF = 156; const TOTAL_LOCKED = 8;
+const PAGE_SIZE = 6;
+
 function getInitials(name: string) {
   return name.split(' ').slice(-2).map(w => w[0]).join('').toUpperCase();
 }
-
-function getAvatarGradient(id: number) {
-  const g = [
-    'linear-gradient(135deg,#6366f1,#8b5cf6)',
-    'linear-gradient(135deg,#3b82f6,#06b6d4)',
-    'linear-gradient(135deg,#10b981,#059669)',
-    'linear-gradient(135deg,#f59e0b,#ef4444)',
-    'linear-gradient(135deg,#ec4899,#8b5cf6)',
-    'linear-gradient(135deg,#14b8a6,#3b82f6)',
-    'linear-gradient(135deg,#f97316,#ec4899)',
-  ];
-  return g[id % g.length];
-}
-
-const roleLabels: Record<string, { label: string; cls: string }> = {
-  admin:    { label: 'Quản trị viên', cls: 'role-admin' },
-  staff:    { label: 'Nhân viên',     cls: 'role-staff' },
-  customer: { label: 'Khách hàng',    cls: 'role-customer' },
-  guest:    { label: 'Khách vãng lai',cls: 'role-guest' },
+const GRADIENTS = [
+  'linear-gradient(135deg,#003fb1,#1e62e6)',
+  'linear-gradient(135deg,#3b82f6,#06b6d4)',
+  'linear-gradient(135deg,#10b981,#059669)',
+  'linear-gradient(135deg,#f59e0b,#ef4444)',
+  'linear-gradient(135deg,#ec4899,#8b5cf6)',
+  'linear-gradient(135deg,#14b8a6,#3b82f6)',
+];
+const roleConfig: Record<string, { label: string; cls: string }> = {
+  admin:    { label: 'Quản trị viên', cls: 'primary' },
+  staff:    { label: 'Nhân viên',     cls: 'success' },
+  customer: { label: 'Khách hàng',    cls: 'info' },
+  guest:    { label: 'Khách vãng lai',cls: 'muted' },
 };
 
-// ===================== ADD USER MODAL =====================
-interface AddUserModalProps { onClose: () => void; onAdd: (u: AdminUser) => void; }
-
-function AddUserModal({ onClose, onAdd }: AddUserModalProps) {
+function AddUserModal({ onClose, onAdd }: { onClose: () => void; onAdd: (u: AdminUser) => void }) {
   const [form, setForm] = useState({ name: '', email: '', phone: '', role: 'customer' as AdminUser['role'] });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -83,57 +65,54 @@ function AddUserModal({ onClose, onAdd }: AddUserModalProps) {
     ev.preventDefault();
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
-    const newUser: AdminUser = {
-      id: Math.floor(Math.random() * 1000) + 1000,
-      ...form,
-      status: 'active',
-      registeredAt: new Date().toLocaleDateString('vi-VN'),
-    };
-    onAdd(newUser);
+    onAdd({ id: Math.floor(Math.random() * 1000) + 1000, ...form, status: 'active', registeredAt: new Date().toLocaleDateString('vi-VN') });
     onClose();
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal au-modal" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <div className="flex items-center gap-3">
-            <div className="au-modal-icon"><UserPlus size={20} /></div>
+    <div className="adm-modal-overlay" onClick={onClose}>
+      <div className="adm-modal" onClick={e => e.stopPropagation()}>
+        <div className="adm-modal-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className="adm-modal-icon"><UserPlus size={18} /></div>
             <div>
-              <h2 className="modal-title">Thêm người dùng mới</h2>
-              <p className="text-sm text-muted" style={{ marginTop: 2 }}>Điền thông tin để tạo tài khoản</p>
+              <div className="adm-modal-title">Thêm người dùng mới</div>
+              <div className="adm-modal-subtitle">Điền thông tin để tạo tài khoản</div>
             </div>
           </div>
-          <button className="btn btn-ghost btn-icon" onClick={onClose}>✕</button>
+          <button className="adm-btn ghost icon-only" onClick={onClose}><X size={16} /></button>
         </div>
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div className="form-group">
-            <label className="form-label">Họ và tên *</label>
-            <input className={`form-input ${errors.name ? 'input-error' : ''}`} placeholder="Nguyễn Văn A" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
-            {errors.name && <span className="error-msg">{errors.name}</span>}
+        <form onSubmit={handleSubmit}>
+          <div className="adm-modal-body">
+            {[
+              { key: 'name', label: 'Họ và tên *', placeholder: 'Nguyễn Văn A' },
+              { key: 'email', label: 'Email *', placeholder: 'example@email.com' },
+              { key: 'phone', label: 'Số điện thoại *', placeholder: '09xxxxxxxx' },
+            ].map(f => (
+              <div key={f.key} className="adm-form-group">
+                <label className="adm-form-label">{f.label}</label>
+                <input
+                  className={`adm-form-input${errors[f.key] ? ' error' : ''}`}
+                  placeholder={f.placeholder}
+                  value={(form as any)[f.key]}
+                  onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
+                />
+                {errors[f.key] && <span className="adm-error-msg">{errors[f.key]}</span>}
+              </div>
+            ))}
+            <div className="adm-form-group">
+              <label className="adm-form-label">Vai trò</label>
+              <select className="adm-form-input adm-select" value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value as AdminUser['role'] }))}>
+                <option value="guest">Khách vãng lai</option>
+                <option value="customer">Khách hàng</option>
+                <option value="staff">Nhân viên cứu hộ</option>
+                <option value="admin">Quản trị viên</option>
+              </select>
+            </div>
           </div>
-          <div className="form-group">
-            <label className="form-label">Email *</label>
-            <input className={`form-input ${errors.email ? 'input-error' : ''}`} placeholder="example@email.com" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} />
-            {errors.email && <span className="error-msg">{errors.email}</span>}
-          </div>
-          <div className="form-group">
-            <label className="form-label">Số điện thoại *</label>
-            <input className={`form-input ${errors.phone ? 'input-error' : ''}`} placeholder="09xxxxxxxx" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} />
-            {errors.phone && <span className="error-msg">{errors.phone}</span>}
-          </div>
-          <div className="form-group">
-            <label className="form-label">Vai trò</label>
-            <select className="form-input form-select" value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value as AdminUser['role'] }))}>
-              <option value="guest">Khách vãng lai</option>
-              <option value="customer">Khách hàng</option>
-              <option value="staff">Nhân viên cứu hộ</option>
-              <option value="admin">Quản trị viên</option>
-            </select>
-          </div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>Hủy</button>
-            <button type="submit" className="btn btn-primary"><UserPlus size={16} />Tạo tài khoản</button>
+          <div className="adm-modal-footer">
+            <button type="button" className="adm-btn secondary" onClick={onClose}>Hủy</button>
+            <button type="submit" className="adm-btn primary"><UserPlus size={15} /> Tạo tài khoản</button>
           </div>
         </form>
       </div>
@@ -141,32 +120,53 @@ function AddUserModal({ onClose, onAdd }: AddUserModalProps) {
   );
 }
 
-// ===================== ACTION MENU =====================
-interface ActionMenuProps { user: AdminUser; onToggleLock: () => void; onDelete: () => void; }
-
-function ActionMenu({ user, onToggleLock, onDelete }: ActionMenuProps) {
+function ActionMenu({ user, onToggleLock, onDelete }: { user: AdminUser; onToggleLock: () => void; onDelete: () => void }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="au-action-wrap">
-      <button className="btn btn-ghost btn-icon btn-sm" onClick={() => setOpen(p => !p)}>
-        <MoreHorizontal size={16} />
-      </button>
+    <div style={{ position: 'relative', display: 'inline-block' }}>
+      <button className="adm-btn ghost icon-only sm" onClick={() => setOpen(p => !p)}><MoreHorizontal size={15} /></button>
       {open && (
-        <div className="au-action-menu" onMouseLeave={() => setOpen(false)}>
-          <button onClick={() => { alert(`Xem chi tiết: ${user.name}`); setOpen(false); }}><Eye size={14} />Xem chi tiết</button>
-          <button onClick={() => { alert(`Chỉnh sửa: ${user.name}`); setOpen(false); }}><Edit2 size={14} />Chỉnh sửa</button>
-          <button onClick={() => { onToggleLock(); setOpen(false); }}>
-            {user.status === 'locked' ? <><Unlock size={14} />Mở khóa</> : <><Lock size={14} />Khóa tài khoản</>}
+        <div onMouseLeave={() => setOpen(false)} style={{
+          position: 'absolute', right: 0, top: '100%', marginTop: 6,
+          width: 180, background: '#fff', border: '1.5px solid rgba(0,63,177,0.1)',
+          borderRadius: 14, boxShadow: '0 12px 32px rgba(0,63,177,0.15)',
+          zIndex: 50, overflow: 'hidden', padding: 4
+        }}>
+          {[
+            { icon: <Eye size={13} />, label: 'Xem chi tiết', action: () => { alert(`Xem: ${user.name}`); setOpen(false); } },
+            { icon: <Edit2 size={13} />, label: 'Chỉnh sửa', action: () => { alert(`Sửa: ${user.name}`); setOpen(false); } },
+            { icon: user.status === 'locked' ? <Unlock size={13} /> : <Lock size={13} />, label: user.status === 'locked' ? 'Mở khóa' : 'Khóa tài khoản', action: () => { onToggleLock(); setOpen(false); } },
+          ].map((item, i) => (
+            <button key={i} onClick={item.action} style={{
+              width: '100%', display: 'flex', alignItems: 'center', gap: 9,
+              padding: '9px 12px', background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: 13, fontWeight: 600, color: '#434654', borderRadius: 10,
+              transition: 'all 0.15s',
+            }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#f0f4ff')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+            >
+              {item.icon} {item.label}
+            </button>
+          ))}
+          <div className="adm-divider" />
+          <button onClick={() => { onDelete(); setOpen(false); }} style={{
+            width: '100%', display: 'flex', alignItems: 'center', gap: 9,
+            padding: '9px 12px', background: 'none', border: 'none', cursor: 'pointer',
+            fontSize: 13, fontWeight: 600, color: '#dc2626', borderRadius: 10,
+            transition: 'all 0.15s',
+          }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#fff5f5')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+          >
+            <Trash2 size={13} /> Xóa
           </button>
-          <div className="au-menu-divider" />
-          <button className="danger" onClick={() => { onDelete(); setOpen(false); }}><Trash2 size={14} />Xóa</button>
         </div>
       )}
     </div>
   );
 }
 
-// ===================== MAIN PAGE =====================
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUser[]>(mockAdminUsers);
   const [search, setSearch] = useState('');
@@ -175,15 +175,12 @@ export default function AdminUsersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  const filtered = useMemo(() => {
-    return users.filter(u => {
-      const q = search.toLowerCase();
-      const matchSearch = !q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || u.phone.includes(q);
-      const matchRole = roleFilter === 'all' || u.role === roleFilter;
-      const matchStatus = statusFilter === 'all' || u.status === statusFilter;
-      return matchSearch && matchRole && matchStatus;
-    });
-  }, [users, search, roleFilter, statusFilter]);
+  const filtered = useMemo(() => users.filter(u => {
+    const q = search.toLowerCase();
+    return (!q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || u.phone.includes(q))
+      && (roleFilter === 'all' || u.role === roleFilter)
+      && (statusFilter === 'all' || u.status === statusFilter);
+  }), [users, search, roleFilter, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
@@ -193,7 +190,6 @@ export default function AdminUsersPage() {
     setUsers(prev => prev.map(u => u.id === id ? { ...u, status: u.status === 'locked' ? 'active' : 'locked' } : u));
     toast.success('Đã cập nhật trạng thái tài khoản');
   }
-
   function handleDelete(id: number) {
     if (window.confirm('Bạn có chắc muốn xóa người dùng này?')) {
       setUsers(prev => prev.filter(u => u.id !== id));
@@ -201,222 +197,133 @@ export default function AdminUsersPage() {
     }
   }
 
-  // Build pagination: 1 2 3 … lastPage
-  const paginationPages = useMemo<(number | '...')[]>(() => {
-    const pages: (number | '...')[] = [];
-    const DISPLAY_TOTAL = Math.ceil(TOTAL_USERS / PAGE_SIZE);
-    if (DISPLAY_TOTAL <= 7) {
-      for (let i = 1; i <= DISPLAY_TOTAL; i++) pages.push(i);
-    } else {
-      pages.push(1, 2, 3, '...', DISPLAY_TOTAL);
-    }
-    return pages;
-  }, []);
-
   return (
-    <div className="animate-fade-in space-y-8">
-      {/* Breadcrumb & Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[var(--text-muted)]">
-            <span>Quản trị</span>
-            <span className="opacity-30">/</span>
-            <span className="text-[var(--primary)]">Tài khoản người dùng</span>
-          </div>
-          <h1 className="text-4xl font-black text-[var(--text-main)] tracking-tight">Quản lý tài khoản</h1>
-          <p className="text-[var(--text-sub)] max-w-2xl">
-            Theo dõi, phân quyền và quản lý trạng thái hoạt động của tất cả người dùng trong hệ thống cứu hộ chuyên nghiệp RescueGuard.
-          </p>
+    <div>
+      {/* Header */}
+      <div className="adm-page-header">
+        <div>
+          <div className="adm-breadcrumb"><span>Quản trị</span><span>/</span><span className="active">Tài khoản người dùng</span></div>
+          <h1 className="adm-page-title">Quản lý tài khoản</h1>
+          <p className="adm-page-subtitle">Theo dõi, phân quyền và quản lý trạng thái hoạt động của tất cả người dùng.</p>
         </div>
-        <button className="btn btn-primary" id="btn-add-user" onClick={() => setShowAddModal(true)}>
-          <UserPlus size={18} />
-          Thêm người dùng
+        <button className="adm-btn primary" onClick={() => setShowAddModal(true)}>
+          <UserPlus size={16} /> Thêm người dùng
         </button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="adm-stats-grid" style={{ gridTemplateColumns: 'repeat(4,1fr)', marginBottom: 24 }}>
         {[
-          { label: 'Tổng người dùng', value: TOTAL_USERS.toLocaleString('vi-VN'), icon: Users, color: 'var(--primary)', trend: '+12%' },
-          { label: 'Quản trị viên', value: TOTAL_ADMINS, icon: Shield, color: 'var(--warning)' },
-          { label: 'Nhân viên cứu hộ', value: TOTAL_STAFF, icon: UserCheck, color: 'var(--success)' },
-          { label: 'Tài khoản bị khóa', value: String(TOTAL_LOCKED).padStart(2, '0'), icon: UserX, color: 'var(--danger)' },
-        ].map((s, idx) => (
-          <div key={idx} className="card p-6 flex items-start gap-5 group relative overflow-hidden">
-            {/* Blue glowing border effect on hover */}
-            <div className="absolute inset-0 border-2 border-transparent group-hover:border-[var(--primary)]/20 transition-all rounded-[var(--radius-lg)]" />
-            
-            <div 
-              className="w-14 h-14 rounded-2xl flex items-center justify-center transition-all group-hover:scale-110 shadow-sm"
-              style={{ color: s.color, background: idx === 0 ? 'var(--primary-soft)' : 'var(--bg-body)' }}
-            >
-              <s.icon size={28} />
-            </div>
-            <div className="space-y-1 relative z-10">
-              <div className="flex items-center gap-2">
-                <span className="text-3xl font-black text-[var(--text-main)] leading-none">{s.value}</span>
-                {s.trend && <span className="text-[10px] font-black text-[var(--success)] bg-green-50 px-1.5 py-0.5 rounded-md">{s.trend}</span>}
+          { label: 'Tổng người dùng', value: TOTAL_USERS.toLocaleString('vi-VN'), icon: Users, color: '#003fb1', bg: 'rgba(0,63,177,0.1)', trend: '+12%' },
+          { label: 'Quản trị viên', value: TOTAL_ADMINS, icon: Shield, color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
+          { label: 'Nhân viên cứu hộ', value: TOTAL_STAFF, icon: UserCheck, color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+          { label: 'Tài khoản bị khóa', value: String(TOTAL_LOCKED).padStart(2, '0'), icon: UserX, color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+        ].map((s, i) => {
+          const Icon = s.icon;
+          return (
+            <div key={i} className="adm-stat-card">
+              <div className="adm-stat-icon" style={{ background: s.bg, color: s.color }}><Icon size={22} /></div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div className="adm-stat-value">{s.value}</div>
+                  {(s as any).trend && <span style={{ fontSize: 10, fontWeight: 800, color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '2px 7px', borderRadius: 8 }}>{(s as any).trend}</span>}
+                </div>
+                <div className="adm-stat-label">{s.label}</div>
               </div>
-              <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">{s.label}</p>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Table Card */}
-      <div className="card p-0 overflow-hidden border-[var(--primary)]/10 shadow-[var(--shadow-md)]">
-
+      <div className="adm-card">
         {/* Filter Bar */}
-        <div className="p-6 border-b border-[var(--border)] flex flex-col lg:flex-row gap-4 items-center justify-between bg-[var(--bg-body)]/50">
-          <div className="relative w-full lg:w-1/2 group">
-            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--primary)] transition-colors" />
-            <input
-              id="user-search"
-              placeholder="Tìm kiếm theo tên, email hoặc số điện thoại..."
-              className="w-full bg-white border border-[var(--border)] rounded-2xl pl-12 pr-6 py-3 text-sm focus:border-[var(--primary)] outline-none transition-all focus:ring-4 focus:ring-[var(--primary)]/5"
-              value={search}
-              onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
-            />
+        <div className="adm-filter-bar">
+          <div className="adm-search-input-wrap" style={{ maxWidth: 340 }}>
+            <Search size={16} />
+            <input className="adm-search-input" placeholder="Tìm kiếm theo tên, email hoặc SĐT..." value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} />
           </div>
-          <div className="flex items-center gap-3 w-full lg:w-auto">
-            <select 
-              id="role-filter" 
-              className="bg-white border border-[var(--border)] rounded-2xl px-4 py-3 text-sm outline-none focus:border-[var(--primary)] transition-all flex-1 lg:flex-none min-w-[160px]"
-              value={roleFilter} 
-              onChange={e => { setRoleFilter(e.target.value); setCurrentPage(1); }}
-            >
-              <option value="all">Tất cả vai trò</option>
-              <option value="admin">Quản trị viên</option>
-              <option value="staff">Nhân viên</option>
-              <option value="customer">Khách hàng</option>
-              <option value="guest">Khách vãng lai</option>
-            </select>
-            <select 
-              id="status-filter" 
-              className="bg-white border border-[var(--border)] rounded-2xl px-4 py-3 text-sm outline-none focus:border-[var(--primary)] transition-all flex-1 lg:flex-none min-w-[140px]"
-              value={statusFilter} 
-              onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-            >
-              <option value="all">Trạng thái</option>
-              <option value="active">Hoạt động</option>
-              <option value="locked">Bị khóa</option>
-            </select>
-            <button className="p-3 bg-white border border-[var(--border)] rounded-2xl text-[var(--text-sub)] hover:text-[var(--primary)] transition-all">
-              <SlidersHorizontal size={18} />
-            </button>
-          </div>
+          <select className="adm-select" value={roleFilter} onChange={e => { setRoleFilter(e.target.value); setCurrentPage(1); }}>
+            <option value="all">Tất cả vai trò</option>
+            <option value="admin">Quản trị viên</option>
+            <option value="staff">Nhân viên</option>
+            <option value="customer">Khách hàng</option>
+            <option value="guest">Khách vãng lai</option>
+          </select>
+          <select className="adm-select" value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }}>
+            <option value="all">Trạng thái</option>
+            <option value="active">Hoạt động</option>
+            <option value="locked">Bị khóa</option>
+          </select>
+          <button className="adm-btn secondary icon-only" title="Bộ lọc nâng cao"><SlidersHorizontal size={16} /></button>
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="data-table">
+        <div className="adm-table-wrap">
+          <table className="adm-table">
             <thead>
               <tr>
-                <th className="w-20">ID</th>
+                <th style={{ width: 70 }}>ID</th>
                 <th>NGƯỜI DÙNG</th>
                 <th>VAI TRÒ</th>
                 <th>TRẠNG THÁI</th>
                 <th>NGÀY ĐĂNG KÝ</th>
-                <th className="text-right">THAO TÁC</th>
+                <th style={{ textAlign: 'right' }}>THAO TÁC</th>
               </tr>
             </thead>
             <tbody>
               {paginated.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="text-center py-20 text-[var(--text-muted)]">
-                    <Users size={48} className="mx-auto mb-4 opacity-20" />
-                    <p className="font-bold">Không tìm thấy người dùng phù hợp</p>
+                <tr><td colSpan={6}>
+                  <div className="adm-empty"><Users size={44} /><p>Không tìm thấy người dùng phù hợp</p></div>
+                </td></tr>
+              ) : paginated.map(user => (
+                <tr key={user.id}>
+                  <td style={{ fontWeight: 700, color: '#737686' }}>#{user.id}</td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div className="adm-avatar" style={{ width: 38, height: 38, background: GRADIENTS[user.id % GRADIENTS.length], fontSize: 12 }}>
+                        {getInitials(user.name)}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 800, color: '#191c1e', fontSize: 13 }}>{user.name}</div>
+                        <div style={{ fontSize: 11, color: '#737686' }}>{user.email}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span className={`adm-badge ${roleConfig[user.role].cls}`}>{roleConfig[user.role].label}</span></td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                      <span className={`adm-status-dot ${user.status === 'active' ? 'online' : 'offline'}`} />
+                      <span style={{ fontSize: 13, fontWeight: 700, color: user.status === 'locked' ? '#dc2626' : '#191c1e' }}>
+                        {user.status === 'active' ? 'Hoạt động' : 'Bị khóa'}
+                      </span>
+                    </div>
+                  </td>
+                  <td style={{ fontSize: 13, color: '#737686', fontWeight: 600 }}>{user.registeredAt}</td>
+                  <td style={{ textAlign: 'right' }}>
+                    <ActionMenu user={user} onToggleLock={() => handleToggleLock(user.id)} onDelete={() => handleDelete(user.id)} />
                   </td>
                 </tr>
-              ) : paginated.map(user => {
-                const roleMeta = roleLabels[user.role];
-                return (
-                  <tr key={user.id} className="hover:bg-[var(--bg-body)]/50 transition-colors group">
-                    <td className="font-bold text-[var(--text-muted)]">#{user.id}</td>
-                    <td>
-                      <div className="flex items-center gap-4">
-                        <div 
-                          className="w-11 h-11 rounded-2xl flex items-center justify-center text-white font-black text-sm shadow-sm group-hover:scale-110 transition-transform" 
-                          style={{ background: getAvatarGradient(user.id) }}
-                        >
-                          {getInitials(user.name)}
-                        </div>
-                        <div>
-                          <div className="font-black text-[var(--text-main)]">{user.name}</div>
-                          <div className="text-xs text-[var(--text-muted)]">{user.email}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                        user.role === 'admin' ? 'bg-indigo-100 text-indigo-700' :
-                        user.role === 'staff' ? 'bg-emerald-100 text-emerald-700' :
-                        user.role === 'guest' ? 'bg-orange-100 text-orange-700' :
-                        'bg-blue-100 text-blue-700'
-                      }`}>
-                        {roleMeta.label}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${user.status === 'active' ? 'bg-[var(--success)] animate-pulse' : 'bg-[var(--danger)]'}`} />
-                        <span className={`text-sm font-bold ${user.status === 'locked' ? 'text-[var(--danger)]' : 'text-[var(--text-main)]'}`}>
-                          {user.status === 'active' ? 'Hoạt động' : 'Bị khóa'}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="text-sm font-medium text-[var(--text-sub)]">{user.registeredAt}</td>
-                    <td className="text-right">
-                      <ActionMenu
-                        user={user}
-                        onToggleLock={() => handleToggleLock(user.id)}
-                        onDelete={() => handleDelete(user.id)}
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
+              ))}
             </tbody>
           </table>
         </div>
 
         {/* Pagination */}
-        <div className="p-6 bg-[var(--bg-body)]/30 border-t border-[var(--border)] flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
-            Hiển thị <span className="text-[var(--text-main)]">{filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1} - {Math.min(safePage * PAGE_SIZE, filtered.length)}</span> trong <span className="text-[var(--text-main)]">{TOTAL_USERS.toLocaleString('vi-VN')}</span> kết quả
+        <div className="adm-pagination">
+          <span className="adm-pagination-info">
+            Hiển thị <strong>{filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)}</strong> trong <strong>{TOTAL_USERS.toLocaleString('vi-VN')}</strong> kết quả
           </span>
-          <div className="flex items-center gap-2">
-            <button 
-              className="p-2 rounded-xl border border-[var(--border)] bg-white text-[var(--text-sub)] hover:text-[var(--primary)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-              disabled={safePage === 1} 
-              onClick={() => setCurrentPage(p => p - 1)}
-            >
-              <ChevronLeft size={20} />
+          <div className="adm-page-btns">
+            <button className="adm-page-btn" disabled={safePage === 1} onClick={() => setCurrentPage(p => p - 1)}><ChevronLeft size={16} /></button>
+            {[1, 2, 3].map(p => (
+              <button key={p} className={`adm-page-btn${safePage === p ? ' active' : ''}`} onClick={() => setCurrentPage(p)}>{p}</button>
+            ))}
+            <span style={{ padding: '0 4px', color: '#737686' }}>…</span>
+            <button className="adm-page-btn" onClick={() => setCurrentPage(Math.ceil(TOTAL_USERS / PAGE_SIZE))}>
+              {Math.ceil(TOTAL_USERS / PAGE_SIZE)}
             </button>
-            <div className="flex items-center gap-1">
-              {paginationPages.map((p, i) =>
-                p === '...'
-                  ? <span key={`e${i}`} className="px-2 text-[var(--text-muted)]">...</span>
-                  : <button 
-                      key={p} 
-                      className={`w-10 h-10 rounded-xl font-black text-sm transition-all ${
-                        safePage === p 
-                        ? 'bg-[var(--primary)] text-white shadow-lg shadow-[var(--primary)]/20' 
-                        : 'bg-white border border-[var(--border)] text-[var(--text-sub)] hover:border-[var(--primary)]/30'
-                      }`}
-                      onClick={() => setCurrentPage(p as number)}
-                    >
-                      {p}
-                    </button>
-              )}
-            </div>
-            <button 
-              className="p-2 rounded-xl border border-[var(--border)] bg-white text-[var(--text-sub)] hover:text-[var(--primary)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-              disabled={safePage === totalPages} 
-              onClick={() => setCurrentPage(p => p + 1)}
-            >
-              <ChevronRight size={20} />
-            </button>
+            <button className="adm-page-btn" disabled={safePage === totalPages} onClick={() => setCurrentPage(p => p + 1)}><ChevronRight size={16} /></button>
           </div>
         </div>
       </div>

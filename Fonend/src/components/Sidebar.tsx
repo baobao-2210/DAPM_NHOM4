@@ -13,11 +13,11 @@ const navGroups = [
   {
     label: 'Quản Lý',
     items: [
-      { path: '/admin/requests', icon: AlertTriangle, label: 'Yêu Cầu Cứu Hộ', badge: 7, badgeType: 'danger' },
+      { path: '/admin/requests', icon: AlertTriangle, label: 'Yêu Cầu Cứu Hộ', badge: 7, badgeCls: '' },
       { path: '/admin/staff', icon: Users, label: 'Nhân Viên' },
       { path: '/admin/vehicles', icon: Car, label: 'Phương Tiện' },
       { path: '/admin/services', icon: Wrench, label: 'Dịch Vụ' },
-      { path: '/admin/complaints', icon: MessageSquare, label: 'Khiếu Nại', badge: 2, badgeType: 'danger' },
+      { path: '/admin/complaints', icon: MessageSquare, label: 'Khiếu Nại', badge: 2, badgeCls: '' },
     ]
   },
   {
@@ -25,94 +25,79 @@ const navGroups = [
     items: [
       { path: '/admin/users', icon: Shield, label: 'Tài Khoản' },
       { path: '/admin/reports', icon: FileText, label: 'Báo Cáo & Thống Kê' },
-      { path: '/admin/notifications', icon: Bell, label: 'Thông Báo', badge: 3, badgeType: 'primary' },
+      { path: '/admin/notifications', icon: Bell, label: 'Thông Báo', badge: 3, badgeCls: 'accent' },
       { path: '/admin/system-settings', icon: Settings, label: 'Cài Đặt Hệ Thống' },
     ]
   }
 ];
 
-
-
-interface SidebarProps {
-  onClose?: () => void;
-  isOpen?: boolean;
-}
+interface SidebarProps { onClose?: () => void; isOpen?: boolean; }
 
 export default function Sidebar({ onClose, isOpen }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { logout } = useAuth();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/partner/login', { replace: true });
-  };
+  const handleLogout = () => { logout(); navigate('/partner/login', { replace: true }); };
 
   return (
-    <aside className={`${isOpen ? 'mobile-open' : ''} sidebar`}>
+    <aside className={`admin-sidebar ${isOpen ? 'mobile-open' : ''}`}>
 
-      <div className="sidebar-logo py-8 px-8 border-b border-[var(--border)] flex items-center justify-between">
-        <div className="flex items-center">
-          <div className="w-12 h-12 rounded-2xl bg-[var(--primary)] flex items-center justify-center shadow-lg shadow-[var(--primary)]/20">
-            <Car size={24} color="white" />
+      {/* Logo */}
+      <div className="admin-sidebar-logo">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="admin-logo-icon">
+            <Car size={22} />
           </div>
-          <div className="sidebar-logo-text ml-4">
-            <h2 className="text-xl font-black text-[var(--primary)] leading-tight">RescueGuard</h2>
-            <span className="text-[10px] uppercase tracking-widest font-bold text-[var(--text-muted)]">Partner Portal</span>
+          <div className="admin-logo-text">
+            <h2>RescueGuard</h2>
+            <span>Admin Portal</span>
           </div>
         </div>
-        <button className="lg:hidden p-2 text-[var(--text-muted)]" onClick={onClose}>
+        <button
+          className="lg:hidden"
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', padding: 6 }}
+          onClick={onClose}
+        >
           <X size={20} />
         </button>
       </div>
 
-
-      <nav className="sidebar-nav flex-1 overflow-y-auto py-6 px-4 space-y-8">
+      {/* Nav */}
+      <nav className="admin-sidebar-nav">
         {navGroups.map(group => (
-          <div key={group.label} className="space-y-1">
-            <div className="px-4 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] mb-3">
-              {group.label}
-            </div>
+          <div key={group.label} className="admin-nav-group">
+            <div className="admin-nav-group-label">{group.label}</div>
             {group.items.map(item => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
               return (
                 <div
                   key={item.path}
-                  className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl cursor-pointer transition-all group relative overflow-hidden ${
-                    isActive 
-                    ? 'nav-item-active' 
-                    : 'text-[var(--text-sub)] hover:bg-[var(--primary)]/[0.04] hover:text-[var(--primary)]'
-                  }`}
+                  className={`admin-nav-item${isActive ? ' active' : ''}`}
                   onClick={() => navigate(item.path)}
                 >
-                  <Icon size={18} className={isActive ? 'text-[var(--primary)]' : 'text-[var(--text-muted)] group-hover:text-[var(--primary)]'} />
-                  <span className="text-sm">{item.label}</span>
+                  <div className="nav-icon">
+                    <Icon size={17} />
+                  </div>
+                  <span style={{ flex: 1 }}>{item.label}</span>
                   {item.badge !== undefined && (
-                    <span className={`ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      item.badgeType === 'danger' ? 'bg-red-100 text-red-600' : 'bg-[var(--primary)] text-white'
-                    }`}>
-                      {item.badge}
-                    </span>
+                    <span className={`admin-nav-badge ${item.badgeCls || ''}`}>{item.badge}</span>
                   )}
-                  {isActive && !item.badge && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[var(--primary)] shadow-[0_0_8px_var(--primary)]" />}
                 </div>
               );
             })}
-
           </div>
         ))}
-
-
       </nav>
 
-      <div className="p-4 border-t border-[var(--border)]">
-        <button onClick={handleLogout} className="flex items-center gap-3 w-full px-4 py-4 rounded-2xl text-red-500 font-bold hover:bg-red-50 transition-all cursor-pointer">
-          <LogOut size={18} />
-          <span className="text-sm">Đăng Xuất</span>
+      {/* Logout */}
+      <div className="admin-sidebar-footer">
+        <button className="admin-logout-btn" onClick={handleLogout}>
+          <LogOut size={17} />
+          <span>Đăng Xuất</span>
         </button>
       </div>
     </aside>
   );
 }
-
