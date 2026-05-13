@@ -30,7 +30,6 @@ export default function StaffLoginPage() {
     setIsLoading(false);
 
     if (result.success) {
-      // Dựa vào role để điều hướng
       const role = localStorage.getItem('access_token') ? JSON.parse(atob(localStorage.getItem('access_token')!.split('.')[1])).role : null;
       if (role === 'admin') {
         navigate('/admin', { replace: true });
@@ -43,114 +42,53 @@ export default function StaffLoginPage() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0D0F14 0%, #111827 50%, #0F172A 100%)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: 24,
-      fontFamily: "'Inter', sans-serif",
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
+    <div className="min-h-screen bg-[var(--bg-body)] flex items-center justify-center p-6 relative overflow-hidden font-sans">
       {/* Animated background blobs */}
-      <div style={{
-        position: 'absolute', top: '-10%', left: '-10%',
-        width: 500, height: 500,
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(29,78,216,0.15) 0%, transparent 70%)',
-        pointerEvents: 'none',
-      }} />
-      <div style={{
-        position: 'absolute', bottom: '-10%', right: '-5%',
-        width: 400, height: 400,
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(16,185,129,0.12) 0%, transparent 70%)',
-        pointerEvents: 'none',
-      }} />
+      <div className="absolute -top-[10%] -left-[10%] w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(0,63,177,0.1)_0%,transparent_70%)] pointer-events-none" />
+      <div className="absolute -bottom-[10%] -right-[5%] w-[400px] h-[400px] rounded-full bg-[radial-gradient(circle,rgba(254,208,27,0.12)_0%,transparent_70%)] pointer-events-none" />
 
       {/* Card */}
-      <div style={{
-        width: '100%',
-        maxWidth: 440,
-        background: 'rgba(24, 28, 39, 0.85)',
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: 24,
-        padding: '40px 36px',
-        boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
-        animation: 'fadeInUp 0.4s ease',
-      }}>
+      <div className="w-full max-w-[440px] bg-white border border-[var(--border)] rounded-3xl p-10 shadow-2xl shadow-[var(--primary)]/5 animate-fade-in relative z-10">
 
         {/* Logo & Header */}
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{
-            width: 72, height: 72,
-            background: 'linear-gradient(135deg, #1D4ED8, #0EA5E9)',
-            borderRadius: 20,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 20px',
-            boxShadow: '0 12px 32px rgba(29,78,216,0.4)',
-          }}>
-            <Truck size={34} color="white" />
+        <div className="text-center mb-8">
+          <div className="w-20 h-20 bg-gradient-to-br from-[var(--primary)] to-blue-700 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-[var(--primary)]/30">
+            <Truck size={40} className="text-white" />
           </div>
-          <h1 style={{
-            fontSize: 22, fontWeight: 800,
-            color: '#F0F2F8',
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-            marginBottom: 6,
-          }}>
+          <h1 className="text-3xl font-black text-[var(--text-main)] mb-2 tracking-tight">
             Cổng Nhân Viên Cứu Hộ
           </h1>
-          <p style={{ color: '#5C6480', fontSize: 14 }}>
+          <p className="text-[var(--text-sub)] text-sm font-medium">
             Đăng nhập để truy cập hệ thống điều phối
           </p>
         </div>
 
         {/* Feature badges */}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 28, flexWrap: 'wrap' }}>
+        <div className="flex gap-2 justify-center mb-8 flex-wrap">
           {[
             { icon: <Shield size={12} />, label: 'Bảo mật' },
             { icon: <Zap size={12} />, label: 'Thời gian thực' },
             { icon: <Phone size={12} />, label: 'Hỗ trợ 24/7' },
           ].map((item, i) => (
-            <div key={i} style={{
-              display: 'flex', alignItems: 'center', gap: 5,
-              background: 'rgba(29,78,216,0.1)',
-              border: '1px solid rgba(29,78,216,0.2)',
-              borderRadius: 100,
-              padding: '4px 12px',
-              fontSize: 12, fontWeight: 500,
-              color: '#60A5FA',
-            }}>
+            <div key={i} className="flex items-center gap-1.5 bg-[var(--primary)]/10 border border-[var(--primary)]/20 rounded-full px-3 py-1 text-xs font-bold text-[var(--primary)]">
               {item.icon} {item.label}
             </div>
           ))}
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
 
           {/* Error */}
           {error && (
-            <div style={{
-              padding: '12px 16px',
-              background: 'rgba(239,68,68,0.1)',
-              border: '1px solid rgba(239,68,68,0.25)',
-              borderRadius: 12,
-              color: '#F87171',
-              fontSize: 13, fontWeight: 500,
-              display: 'flex', alignItems: 'center', gap: 8,
-            }}>
+            <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm font-bold flex items-center gap-2">
               <span>⚠️</span> {error}
             </div>
           )}
 
           {/* Staff ID */}
           <div>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#9CA3BF', marginBottom: 8 }}>
+            <label className="block text-xs font-black text-[var(--text-muted)] uppercase tracking-widest mb-2">
               Mã nhân viên / Số điện thoại
             </label>
             <input
@@ -159,78 +97,28 @@ export default function StaffLoginPage() {
               placeholder="Ví dụ: NV001 hoặc 0912 345 678"
               value={form.staffId}
               onChange={e => setForm({ ...form, staffId: e.target.value })}
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 12,
-                color: '#F0F2F8',
-                fontSize: 14,
-                fontFamily: 'inherit',
-                outline: 'none',
-                transition: 'all 0.2s',
-              }}
-              onFocus={e => {
-                e.currentTarget.style.borderColor = '#1D4ED8';
-                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(29,78,216,0.2)';
-                e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-              }}
-              onBlur={e => {
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-                e.currentTarget.style.boxShadow = 'none';
-                e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
-              }}
+              className="w-full px-4 py-3.5 bg-[var(--bg-body)] border border-[var(--border)] rounded-2xl text-[var(--text-main)] text-sm font-semibold outline-none transition-all focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 placeholder-[var(--text-muted)]/50"
             />
           </div>
 
           {/* Password */}
           <div>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#9CA3BF', marginBottom: 8 }}>
+            <label className="block text-xs font-black text-[var(--text-muted)] uppercase tracking-widest mb-2">
               Mật khẩu
             </label>
-            <div style={{ position: 'relative' }}>
+            <div className="relative">
               <input
                 id="staff-password-input"
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Nhập mật khẩu"
                 value={form.password}
                 onChange={e => setForm({ ...form, password: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '12px 44px 12px 16px',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: 12,
-                  color: '#F0F2F8',
-                  fontSize: 14,
-                  fontFamily: 'inherit',
-                  outline: 'none',
-                  transition: 'all 0.2s',
-                }}
-                onFocus={e => {
-                  e.currentTarget.style.borderColor = '#1D4ED8';
-                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(29,78,216,0.2)';
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-                }}
-                onBlur={e => {
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-                  e.currentTarget.style.boxShadow = 'none';
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
-                }}
+                className="w-full pl-4 pr-11 py-3.5 bg-[var(--bg-body)] border border-[var(--border)] rounded-2xl text-[var(--text-main)] text-sm font-semibold outline-none transition-all focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 placeholder-[var(--text-muted)]/50"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)',
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  color: '#5C6480', display: 'flex', alignItems: 'center',
-                  padding: 4,
-                  transition: 'color 0.2s',
-                }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#9CA3BF')}
-                onMouseLeave={e => (e.currentTarget.style.color = '#5C6480')}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors"
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -242,44 +130,15 @@ export default function StaffLoginPage() {
             id="staff-login-btn"
             type="submit"
             disabled={isLoading}
-            style={{
-              width: '100%',
-              padding: '14px',
-              marginTop: 4,
-              background: isLoading
-                ? 'rgba(29,78,216,0.5)'
-                : 'linear-gradient(135deg, #1D4ED8, #0EA5E9)',
-              border: 'none',
-              borderRadius: 12,
-              color: 'white',
-              fontSize: 15, fontWeight: 700,
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-              transition: 'all 0.2s',
-              boxShadow: isLoading ? 'none' : '0 8px 24px rgba(29,78,216,0.35)',
-              fontFamily: 'inherit',
-            }}
-            onMouseEnter={e => {
-              if (!isLoading) {
-                (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)';
-                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 12px 32px rgba(29,78,216,0.5)';
-              }
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
-              (e.currentTarget as HTMLButtonElement).style.boxShadow = isLoading ? 'none' : '0 8px 24px rgba(29,78,216,0.35)';
-            }}
+            className={`w-full py-4 mt-2 rounded-2xl text-white text-base font-black flex items-center justify-center gap-2.5 transition-all
+              ${isLoading 
+                ? 'bg-[var(--primary)]/50 cursor-not-allowed' 
+                : 'bg-gradient-to-r from-[var(--primary)] to-blue-600 hover:shadow-lg hover:shadow-[var(--primary)]/30 hover:-translate-y-0.5'
+              }`}
           >
             {isLoading ? (
               <>
-                <span style={{
-                  width: 18, height: 18,
-                  border: '2px solid rgba(255,255,255,0.3)',
-                  borderTopColor: 'white',
-                  borderRadius: '50%',
-                  animation: 'spin 0.7s linear infinite',
-                  display: 'inline-block',
-                }} />
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 Đang xác thực...
               </>
             ) : (
@@ -292,34 +151,18 @@ export default function StaffLoginPage() {
         </form>
 
         {/* Footer */}
-        <div style={{
-          marginTop: 28,
-          paddingTop: 24,
-          borderTop: '1px solid rgba(255,255,255,0.06)',
-          textAlign: 'center',
-        }}>
-          <p style={{ fontSize: 13, color: '#5C6480' }}>
+        <div className="mt-8 pt-6 border-t border-[var(--border)] text-center space-y-2">
+          <p className="text-sm text-[var(--text-sub)] font-medium">
             Gặp sự cố đăng nhập?{' '}
-            <a href="tel:19001234" style={{ color: '#60A5FA', fontWeight: 600, textDecoration: 'none' }}>
+            <a href="tel:19001234" className="text-[var(--primary)] font-black hover:underline">
               Liên hệ quản trị viên
             </a>
           </p>
-          <p style={{ fontSize: 12, color: '#3D4262', marginTop: 8 }}>
+          <p className="text-xs text-[var(--text-muted)] font-bold">
             🔒 Kết nối an toàn · RescueOps v2.0
           </p>
         </div>
       </div>
-
-      <style>{`
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(24px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        input::placeholder { color: #3D4262 !important; }
-      `}</style>
     </div>
   );
 }

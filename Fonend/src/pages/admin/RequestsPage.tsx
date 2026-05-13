@@ -1,5 +1,8 @@
-import { useState } from 'react';
-import { Search, Filter, Plus, Eye, CheckCircle, XCircle, MapPin, Phone, Clock, AlertTriangle, Truck } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import {
+  Search, Plus, Eye, CheckCircle, XCircle, MapPin, Phone,
+  Clock, AlertTriangle, Truck, Filter, FileText, Activity, X
+} from 'lucide-react';
 import { mockRequests } from '../../data/mockData';
 import type { RescueRequest, RequestStatus } from '../../types';
 
@@ -8,17 +11,28 @@ const problemLabels: Record<string, string> = {
   engine_failure: '⚙️ Hỏng Máy', accident: '🚨 Tai Nạn', towing: '🚛 Kéo Xe',
   lockout: '🔑 Khóa Xe', other: '❓ Khác',
 };
+
 const statusLabels: Record<RequestStatus, string> = {
   pending: 'Chờ Xử Lý', accepted: 'Đã Tiếp Nhận', dispatched: 'Đang Đến',
   in_progress: 'Đang Xử Lý', completed: 'Hoàn Thành', cancelled: 'Đã Hủy',
 };
-const statusClass: Record<RequestStatus, string> = {
-  pending: 'badge-warning', accepted: 'badge-info', dispatched: 'badge-info',
-  in_progress: 'badge-primary', completed: 'badge-success', cancelled: 'badge-muted',
+
+const statusClass: Record<RequestStatus, { bg: string, text: string, dot: string }> = {
+  pending: { bg: 'bg-amber-100', text: 'text-amber-700', dot: 'bg-amber-500' },
+  accepted: { bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500' },
+  dispatched: { bg: 'bg-indigo-100', text: 'text-indigo-700', dot: 'bg-indigo-500' },
+  in_progress: { bg: 'bg-purple-100', text: 'text-purple-700', dot: 'bg-purple-500' },
+  completed: { bg: 'bg-emerald-100', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+  cancelled: { bg: 'bg-gray-100', text: 'text-gray-600', dot: 'bg-gray-400' },
 };
-const priorityClass: Record<string, string> = {
-  low: 'badge-muted', medium: 'badge-info', high: 'badge-warning', critical: 'badge-danger',
+
+const priorityClass: Record<string, { bg: string, text: string }> = {
+  low: { bg: 'bg-gray-100', text: 'text-gray-600' },
+  medium: { bg: 'bg-blue-100', text: 'text-blue-700' },
+  high: { bg: 'bg-amber-100', text: 'text-amber-700' },
+  critical: { bg: 'bg-red-100', text: 'text-red-700' },
 };
+
 const priorityLabel: Record<string, string> = {
   low: 'Thấp', medium: 'Trung Bình', high: 'Cao', critical: 'Khẩn Cấp',
 };
@@ -26,6 +40,7 @@ const priorityLabel: Record<string, string> = {
 function formatCurrency(n: number) {
   return new Intl.NumberFormat('vi-VN').format(n) + 'đ';
 }
+
 function formatTime(str: string) {
   return new Date(str).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
 }
@@ -36,252 +51,341 @@ export default function RequestsPage() {
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [selected, setSelected] = useState<RescueRequest | null>(null);
 
-  const filtered = mockRequests.filter(r => {
-    const matchSearch = r.customerName.toLowerCase().includes(search.toLowerCase())
-      || r.vehiclePlate.toLowerCase().includes(search.toLowerCase())
-      || r.location.address.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = filterStatus === 'all' || r.status === filterStatus;
-    const matchPriority = filterPriority === 'all' || r.priority === filterPriority;
-    return matchSearch && matchStatus && matchPriority;
-  });
+  const filtered = useMemo(() => {
+    return mockRequests.filter(r => {
+      const q = search.toLowerCase();
+      const matchSearch = !q ||
+        r.customerName.toLowerCase().includes(q) ||
+        r.vehiclePlate.toLowerCase().includes(q) ||
+        r.location.address.toLowerCase().includes(q);
+      const matchStatus = filterStatus === 'all' || r.status === filterStatus;
+      const matchPriority = filterPriority === 'all' || r.priority === filterPriority;
+      return matchSearch && matchStatus && matchPriority;
+    });
+  }, [search, filterStatus, filterPriority]);
 
   const countByStatus = (s: string) => mockRequests.filter(r => r.status === s).length;
+  
+  const pendingCount = countByStatus('pending');
+  const activeCount = countByStatus('accepted') + countByStatus('dispatched') + countByStatus('in_progress');
+  const completedCount = countByStatus('completed');
 
   return (
-    <div className="animate-fade-in">
-      <div className="page-header">
-        <div className="page-header-left">
-          <h1>Quản Lý Yêu Cầu Cứu Hộ</h1>
-          <p>Theo dõi và xử lý tất cả yêu cầu hỗ trợ xe từ khách hàng.</p>
+    <div className="animate-fade-in space-y-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[var(--text-muted)]">
+            <span>Quản trị</span><span className="opacity-30">/</span>
+            <span className="text-[var(--primary)]">Yêu Cầu Cứu Hộ</span>
+          </div>
+          <h1 className="text-4xl font-black text-[var(--text-main)] tracking-tight">Quản lý Yêu cầu</h1>
+          <p className="text-[var(--text-sub)] max-w-2xl">Theo dõi và xử lý tất cả yêu cầu hỗ trợ xe từ khách hàng.</p>
         </div>
         <button className="btn btn-primary">
-          <Plus size={16} /> Tạo Yêu Cầu Mới
+          <Plus size={18} /> Tạo Yêu Cầu Mới
         </button>
       </div>
 
-      {/* Status Tabs */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
         {[
-          { key: 'all', label: 'Tất Cả', count: mockRequests.length },
-          { key: 'pending', label: 'Chờ Xử Lý', count: countByStatus('pending') },
-          { key: 'in_progress', label: 'Đang Xử Lý', count: countByStatus('in_progress') },
-          { key: 'dispatched', label: 'Đang Đến', count: countByStatus('dispatched') },
-          { key: 'completed', label: 'Hoàn Thành', count: countByStatus('completed') },
-          { key: 'cancelled', label: 'Đã Hủy', count: countByStatus('cancelled') },
-        ].map(tab => (
-          <button
-            key={tab.key}
-            className={`btn btn-sm ${filterStatus === tab.key ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => setFilterStatus(tab.key)}
-          >
-            {tab.label}
-            <span style={{
-              background: filterStatus === tab.key ? 'rgba(255,255,255,0.2)' : 'var(--bg-elevated)',
-              borderRadius: 'var(--radius-full)',
-              padding: '1px 7px', fontSize: 11, fontWeight: 700
-            }}>{tab.count}</span>
-          </button>
+          { label: 'Tổng Yêu Cầu', value: mockRequests.length, color: 'var(--primary)', icon: FileText },
+          { label: 'Chờ Xử Lý', value: pendingCount, color: '#f59e0b', icon: Clock },
+          { label: 'Đang Xử Lý', value: activeCount, color: '#3b82f6', icon: Activity },
+          { label: 'Hoàn Thành', value: completedCount, color: 'var(--success)', icon: CheckCircle },
+        ].map((s, i) => (
+          <div key={i} className="card p-6 flex items-center gap-5">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: `${s.color}18`, color: s.color }}>
+              <s.icon size={22} />
+            </div>
+            <div>
+              <div className="text-3xl font-black text-[var(--text-main)]">{s.value}</div>
+              <div className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mt-0.5">{s.label}</div>
+            </div>
+          </div>
         ))}
       </div>
 
-      {/* Filters */}
-      <div className="card" style={{ padding: '16px 20px', marginBottom: 20 }}>
-        <div className="flex items-center gap-3" style={{ flexWrap: 'wrap' }}>
-          <div className="search-bar" style={{ flex: 1, minWidth: 220 }}>
-            <Search size={15} />
-            <input placeholder="Tìm khách hàng, biển số, địa điểm..." value={search} onChange={e => setSearch(e.target.value)} />
+      {/* Main Content Layout */}
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-6" style={{ gridTemplateColumns: selected ? '1fr 380px' : '1fr' }}>
+        
+        {/* Left Side: Table & Filters */}
+        <div className="space-y-6 min-w-0">
+          
+          {/* Status Tabs */}
+          <div className="flex gap-2 flex-wrap">
+            {[
+              { key: 'all', label: 'Tất Cả', count: mockRequests.length },
+              { key: 'pending', label: 'Chờ Xử Lý', count: pendingCount },
+              { key: 'in_progress', label: 'Đang Xử Lý', count: countByStatus('in_progress') },
+              { key: 'dispatched', label: 'Đang Đến', count: countByStatus('dispatched') },
+              { key: 'completed', label: 'Hoàn Thành', count: completedCount },
+              { key: 'cancelled', label: 'Đã Hủy', count: countByStatus('cancelled') },
+            ].map(tab => (
+              <button
+                key={tab.key}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider transition-all ${
+                  filterStatus === tab.key 
+                    ? 'bg-[var(--primary)] text-white shadow-md' 
+                    : 'bg-white border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--primary)]/40'
+                }`}
+                onClick={() => setFilterStatus(tab.key)}
+              >
+                {tab.label}
+                <span className={`px-2 py-0.5 rounded-full text-[10px] ${
+                  filterStatus === tab.key ? 'bg-white/20 text-white' : 'bg-[var(--bg-body)] text-[var(--text-muted)]'
+                }`}>
+                  {tab.count}
+                </span>
+              </button>
+            ))}
           </div>
-          <select
-            className="form-input form-select"
-            style={{ width: 'auto', minWidth: 160 }}
-            value={filterPriority}
-            onChange={e => setFilterPriority(e.target.value)}
-          >
-            <option value="all">Tất Cả Ưu Tiên</option>
-            <option value="critical">Khẩn Cấp</option>
-            <option value="high">Cao</option>
-            <option value="medium">Trung Bình</option>
-            <option value="low">Thấp</option>
-          </select>
-          <button className="btn btn-secondary btn-sm">
-            <Filter size={14} /> Lọc Thêm
-          </button>
-        </div>
-      </div>
 
-      {/* Table */}
-      <div style={{ display: 'grid', gridTemplateColumns: selected ? '1fr 380px' : '1fr', gap: 20 }}>
-        <div className="table-container">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Khách Hàng</th>
-                <th>Sự Cố</th>
-                <th>Địa Điểm</th>
-                <th>Nhân Viên</th>
-                <th>Ưu Tiên</th>
-                <th>Trạng Thái</th>
-                <th>Chi Phí</th>
-                <th>Thời Gian</th>
-                <th style={{ textAlign: 'center' }}>Hành Động</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 && (
-                <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
-                  Không tìm thấy yêu cầu nào
-                </td></tr>
-              )}
-              {filtered.map(req => (
-                <tr key={req.id} style={{ cursor: 'pointer', background: selected?.id === req.id ? 'var(--bg-card-hover)' : undefined }}
-                  onClick={() => setSelected(s => s?.id === req.id ? null : req)}>
-                  <td>
-                    <div className="flex items-center gap-2">
-                      <div className="avatar-placeholder" style={{ width: 32, height: 32, fontSize: 12 }}>
-                        {req.customerName.charAt(0)}
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 13 }}>{req.customerName}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{req.vehiclePlate}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td style={{ fontWeight: 500, fontSize: 13 }}>{problemLabels[req.problemType]}</td>
-                  <td>
-                    <div className="flex items-center gap-1" style={{ fontSize: 12 }}>
-                      <MapPin size={11} style={{ color: 'var(--primary)', flexShrink: 0 }} />
-                      <span className="truncate" style={{ maxWidth: 140 }}>{req.location.address}</span>
-                    </div>
-                  </td>
-                  <td style={{ fontSize: 13 }}>
-                    {req.assignedStaffName
-                      ? <span style={{ color: 'var(--text-primary)' }}>{req.assignedStaffName}</span>
-                      : <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Chưa phân công</span>}
-                  </td>
-                  <td><span className={`badge ${priorityClass[req.priority]}`}>{priorityLabel[req.priority]}</span></td>
-                  <td><span className={`badge ${statusClass[req.status]}`}>{statusLabels[req.status]}</span></td>
-                  <td style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 13 }}>
-                    {req.cost ? formatCurrency(req.cost) : '—'}
-                  </td>
-                  <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{formatTime(req.createdAt)}</td>
-                  <td>
-                    <div className="flex items-center gap-1" style={{ justifyContent: 'center' }}>
-                      <button className="btn btn-ghost btn-icon" style={{ padding: 6 }} onClick={e => { e.stopPropagation(); setSelected(req); }}>
-                        <Eye size={14} />
-                      </button>
-                      {req.status === 'pending' && (
-                        <button className="btn btn-success btn-sm" style={{ padding: '4px 10px', fontSize: 12 }} onClick={e => e.stopPropagation()}>
-                          <CheckCircle size={12} /> Tiếp Nhận
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {/* Filter Bar */}
+          <div className="card p-0 overflow-hidden">
+            <div className="p-5 border-b border-[var(--border)] flex flex-col sm:flex-row gap-4 items-center justify-between bg-[var(--bg-body)]/50">
+              <div className="relative w-full sm:flex-1 group max-w-md">
+                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--primary)] transition-colors" />
+                <input
+                  placeholder="Tìm khách hàng, biển số, địa điểm..."
+                  className="w-full bg-white border border-[var(--border)] rounded-2xl pl-10 pr-4 py-3 text-sm focus:border-[var(--primary)] outline-none transition-all focus:ring-4 focus:ring-[var(--primary)]/5"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-3 w-full sm:w-auto">
+                <select
+                  className="bg-white border border-[var(--border)] rounded-2xl px-4 py-3 text-sm focus:border-[var(--primary)] outline-none transition-all focus:ring-4 focus:ring-[var(--primary)]/5 text-[var(--text-main)] font-medium"
+                  value={filterPriority}
+                  onChange={e => setFilterPriority(e.target.value)}
+                >
+                  <option value="all">Tất Cả Ưu Tiên</option>
+                  <option value="critical">Khẩn Cấp</option>
+                  <option value="high">Cao</option>
+                  <option value="medium">Trung Bình</option>
+                  <option value="low">Thấp</option>
+                </select>
+                <button className="btn btn-secondary px-4">
+                  <Filter size={16} /> <span className="hidden sm:inline">Lọc</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="overflow-x-auto">
+              <table className="data-table w-full">
+                <thead>
+                  <tr>
+                    <th>KHÁCH HÀNG</th>
+                    <th>SỰ CỐ</th>
+                    <th>TRẠNG THÁI</th>
+                    <th>ƯU TIÊN</th>
+                    <th>NHÂN VIÊN</th>
+                    <th className="text-right">THAO TÁC</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.length === 0 ? (
+                    <tr><td colSpan={6} className="text-center py-16 text-[var(--text-muted)]">
+                      <FileText size={40} className="mx-auto mb-3 opacity-20" />
+                      <p className="font-bold">Không tìm thấy yêu cầu phù hợp</p>
+                    </td></tr>
+                  ) : filtered.map(req => {
+                    const statusConfig = statusClass[req.status];
+                    const priorityCfg = priorityClass[req.priority];
+                    const isSelected = selected?.id === req.id;
+
+                    return (
+                      <tr 
+                        key={req.id} 
+                        className={`cursor-pointer transition-colors group ${isSelected ? 'bg-[var(--primary)]/5' : 'hover:bg-[var(--bg-body)]/40'}`}
+                        onClick={() => setSelected(s => s?.id === req.id ? null : req)}
+                      >
+                        <td>
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-white flex-shrink-0"
+                                 style={{ background: 'linear-gradient(135deg,var(--primary),var(--primary-light))' }}>
+                              {req.customerName.charAt(0)}
+                            </div>
+                            <div>
+                              <div className="font-black text-[var(--text-main)] text-sm">{req.customerName}</div>
+                              <div className="text-xs text-[var(--text-muted)]">{req.vehiclePlate}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="font-black text-[var(--text-main)] text-sm">{problemLabels[req.problemType]}</div>
+                          <div className="flex items-center gap-1 text-xs text-[var(--text-muted)] mt-0.5">
+                            <MapPin size={10} className="text-[var(--primary)] flex-shrink-0" />
+                            <span className="truncate max-w-[120px]" title={req.location.address}>{req.location.address}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${statusConfig.bg} ${statusConfig.text}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot}`} />
+                            {statusLabels[req.status]}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`inline-flex px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wider ${priorityCfg.bg} ${priorityCfg.text}`}>
+                            {priorityLabel[req.priority]}
+                          </span>
+                        </td>
+                        <td>
+                          {req.assignedStaffName ? (
+                            <span className="font-bold text-[var(--text-main)] text-sm">{req.assignedStaffName}</span>
+                          ) : (
+                            <span className="text-xs text-[var(--text-muted)] italic">Chưa phân công</span>
+                          )}
+                        </td>
+                        <td className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {req.status === 'pending' && (
+                              <button 
+                                className="btn btn-primary py-1.5 px-3 text-xs"
+                                onClick={e => { e.stopPropagation(); /* TODO: Accept */ }}
+                              >
+                                <CheckCircle size={14} /> Tiếp Nhận
+                              </button>
+                            )}
+                            <button 
+                              className={`p-2 rounded-xl border transition-all ${isSelected ? 'bg-[var(--primary)] text-white border-[var(--primary)]' : 'border-[var(--border)] bg-white text-[var(--text-muted)] hover:text-[var(--primary)] hover:border-[var(--primary)]/40'}`}
+                              onClick={e => { e.stopPropagation(); setSelected(req); }}
+                            >
+                              <Eye size={15} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
         {/* Detail Panel */}
         {selected && (
-          <div className="card animate-slide-up" style={{ height: 'fit-content', position: 'sticky', top: 88 }}>
-            <div className="card-header">
+          <div className="card h-fit sticky top-[88px] animate-slide-up border-2 border-[var(--primary)]/20 shadow-xl overflow-hidden">
+            <div className="bg-[var(--bg-body)]/50 border-b border-[var(--border)] p-5 flex items-center justify-between">
               <div>
-                <div className="card-title">Chi Tiết Yêu Cầu</div>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>#{selected.id.toUpperCase()}</div>
+                <h3 className="font-black text-[var(--text-main)] text-lg">Chi Tiết Yêu Cầu</h3>
+                <p className="text-xs text-[var(--text-muted)] mt-0.5 uppercase tracking-wider font-bold">#{selected.id.toUpperCase()}</p>
               </div>
-              <button className="btn btn-ghost btn-icon" style={{ padding: 6 }} onClick={() => setSelected(null)}>
-                <XCircle size={16} />
+              <button 
+                className="w-8 h-8 rounded-full bg-white border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--danger)] hover:border-red-200 transition-all"
+                onClick={() => setSelected(null)}
+              >
+                <X size={16} />
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="p-5 space-y-6">
               {/* Customer */}
               <div>
-                <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text-muted)', marginBottom: 8 }}>Khách Hàng</div>
-                <div className="flex items-center gap-3">
-                  <div className="avatar-placeholder" style={{ width: 44, height: 44 }}>{selected.customerName.charAt(0)}</div>
+                <div className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-3">Khách Hàng</div>
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg text-white"
+                       style={{ background: 'linear-gradient(135deg,var(--primary),var(--primary-light))' }}>
+                    {selected.customerName.charAt(0)}
+                  </div>
                   <div>
-                    <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{selected.customerName}</div>
-                    <div className="flex items-center gap-1" style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>
-                      <Phone size={12} /> {selected.customerPhone}
+                    <div className="font-black text-[var(--text-main)] text-base">{selected.customerName}</div>
+                    <div className="flex items-center gap-1.5 text-sm text-[var(--text-sub)] mt-1 font-medium">
+                      <Phone size={14} className="text-[var(--primary)]" /> {selected.customerPhone}
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="divider" />
-
               {/* Vehicle */}
               <div>
-                <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text-muted)', marginBottom: 8 }}>Phương Tiện</div>
-                <div className="flex items-center gap-2">
-                  <Truck size={16} style={{ color: 'var(--primary)' }} />
+                <div className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-3">Phương Tiện</div>
+                <div className="flex items-center gap-3 bg-[var(--bg-body)] p-3 rounded-2xl border border-[var(--border)]">
+                  <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-[var(--text-main)] shadow-sm">
+                    <Truck size={18} />
+                  </div>
                   <div>
-                    <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{selected.vehicleModel}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Biển số: {selected.vehiclePlate}</div>
+                    <div className="font-black text-[var(--text-main)] text-sm">{selected.vehicleModel}</div>
+                    <div className="text-xs text-[var(--text-muted)] mt-0.5">Biển số: <span className="font-bold text-[var(--text-sub)]">{selected.vehiclePlate}</span></div>
                   </div>
                 </div>
               </div>
 
-              <div className="divider" />
-
               {/* Problem */}
               <div>
-                <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text-muted)', marginBottom: 8 }}>Sự Cố</div>
-                <div style={{ fontSize: 15 }}>{problemLabels[selected.problemType]}</div>
-                <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 6, lineHeight: 1.5 }}>{selected.description}</div>
+                <div className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-3">Thông Tin Sự Cố</div>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div className="font-black text-[var(--text-main)] text-base">{problemLabels[selected.problemType]}</div>
+                    <span className={`inline-flex px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider ${priorityClass[selected.priority].bg} ${priorityClass[selected.priority].text}`}>
+                      {priorityLabel[selected.priority]}
+                    </span>
+                  </div>
+                  <p className="text-sm text-[var(--text-sub)] leading-relaxed bg-[var(--bg-body)]/50 p-3 rounded-xl border border-[var(--border)]">
+                    {selected.description}
+                  </p>
+                </div>
               </div>
-
-              <div className="divider" />
 
               {/* Location */}
               <div>
-                <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text-muted)', marginBottom: 8 }}>Địa Điểm</div>
-                <div className="flex items-center gap-2" style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                  <MapPin size={14} style={{ color: 'var(--primary)', flexShrink: 0 }} />
-                  {selected.location.address}
+                <div className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-3">Địa Điểm</div>
+                <div className="flex items-start gap-2 text-sm text-[var(--text-sub)] font-medium">
+                  <MapPin size={16} className="text-[var(--primary)] flex-shrink-0 mt-0.5" />
+                  <span>{selected.location.address}</span>
                 </div>
               </div>
 
-              <div className="divider" />
-
-              {/* Status & Priority */}
-              <div className="flex gap-2">
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>Trạng Thái</div>
-                  <span className={`badge ${statusClass[selected.status]}`}>{statusLabels[selected.status]}</span>
+              {/* Status & Time */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-2">Trạng Thái</div>
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${statusClass[selected.status].bg} ${statusClass[selected.status].text}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${statusClass[selected.status].dot}`} />
+                    {statusLabels[selected.status]}
+                  </span>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>Ưu Tiên</div>
-                  <span className={`badge ${priorityClass[selected.priority]}`}>{priorityLabel[selected.priority]}</span>
+                <div>
+                  <div className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-2">Thời Gian Tạo</div>
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-sub)] h-[24px]">
+                    <Clock size={12} className="text-[var(--text-muted)]" /> {formatTime(selected.createdAt)}
+                  </div>
                 </div>
               </div>
 
-              {/* Time */}
-              <div className="flex items-center gap-2" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                <Clock size={12} /> Tạo lúc: {formatTime(selected.createdAt)}
-              </div>
-
+              {/* Cost */}
               {selected.cost && (
-                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', padding: '12px 16px' }}>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Chi Phí Dịch Vụ</div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--primary)', marginTop: 4 }}>{formatCurrency(selected.cost)}</div>
+                <div className="bg-[var(--primary)]/5 border border-[var(--primary)]/20 rounded-2xl p-4 flex justify-between items-center">
+                  <div className="text-xs font-black text-[var(--primary)] uppercase tracking-widest">Chi Phí Dự Kiến</div>
+                  <div className="text-xl font-black text-[var(--primary)]">{formatCurrency(selected.cost)}</div>
                 </div>
               )}
 
               {/* Actions */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
+              <div className="space-y-3 pt-2">
                 {selected.status === 'pending' && (
-                  <button className="btn btn-primary w-full"><CheckCircle size={15} /> Tiếp Nhận & Phân Công</button>
+                  <button className="btn btn-primary w-full py-3 shadow-md">
+                    <CheckCircle size={18} /> Tiếp Nhận & Phân Công
+                  </button>
                 )}
                 {(selected.status === 'accepted' || selected.status === 'dispatched') && (
-                  <button className="btn btn-primary w-full"><AlertTriangle size={15} /> Cập Nhật Tiến Độ</button>
+                  <button className="btn btn-primary w-full py-3 shadow-md" style={{ background: '#3b82f6' }}>
+                    <AlertTriangle size={18} /> Cập Nhật Tiến Độ
+                  </button>
                 )}
-                <button className="btn btn-secondary w-full">Xem Trên Bản Đồ</button>
-                {selected.status !== 'cancelled' && selected.status !== 'completed' && (
-                  <button className="btn btn-danger w-full"><XCircle size={15} /> Hủy Yêu Cầu</button>
-                )}
+                <div className="flex gap-3">
+                  <button className="btn bg-white border border-[var(--border)] text-[var(--text-main)] hover:bg-[var(--bg-body)] flex-1 py-3 font-bold">
+                    <MapPin size={16} /> Xem Bản Đồ
+                  </button>
+                  {selected.status !== 'cancelled' && selected.status !== 'completed' && (
+                    <button className="btn bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 flex-1 py-3 font-bold">
+                      <XCircle size={16} /> Hủy Bỏ
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>

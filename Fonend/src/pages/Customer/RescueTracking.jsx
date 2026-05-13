@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { GoogleMap, useJsApiLoader, Marker, Polyline } from '@react-google-maps/api';
+import { Check, Star, MessageCircle, Phone, Timer, Crosshair } from 'lucide-react';
 
 const RescueTracking = () => {
   // Tọa độ người dùng và xe (Đà Nẵng làm mẫu)
@@ -34,78 +35,78 @@ const RescueTracking = () => {
     ]
   };
 
-  if (!isLoaded) return <div className="h-screen flex items-center justify-center font-bold text-[#003fb1]">Đang tải bản đồ...</div>;
+  if (!isLoaded) return <div className="h-screen flex items-center justify-center font-bold text-[var(--primary)]">Đang tải bản đồ...</div>;
 
   return (
-    <div className="bg-[#f8f9fb] font-['Inter'] h-screen flex flex-col overflow-hidden text-[#191c1e]">
+    <div className="bg-[var(--bg-body)] font-sans h-screen flex flex-col overflow-hidden text-[var(--text-main)]">
       <main className="flex-1 md:pl-64 pt-16 h-full flex flex-col md:flex-row">
         
         {/* PANEL TRÁI: THÔNG TIN CHI TIẾT */}
-        <section className="w-full md:w-[380px] h-full bg-white border-r border-[#edeef0] flex flex-col overflow-y-auto z-20 shadow-2xl">
+        <section className="w-full md:w-[380px] h-full bg-white border-r border-[var(--border)] flex flex-col overflow-y-auto z-20 shadow-2xl animate-fade-in">
           <div className="p-8">
             <header className="mb-8">
-              <h1 className="text-2xl font-black font-['Manrope'] tracking-tight mb-2 text-[#003fb1]">Tiến trình cứu hộ</h1>
-              <p className="text-[#737686] text-[10px] font-black uppercase tracking-widest">Mã: #RG-2026-MUSÉ</p>
+              <h1 className="text-2xl font-black tracking-tight mb-2 text-[var(--text-main)]">Tiến trình cứu hộ</h1>
+              <p className="text-[var(--text-muted)] text-[10px] font-black uppercase tracking-widest">Mã: #RG-2026-MUSÉ</p>
             </header>
 
             {/* Status Timeline */}
             <div className="space-y-8 mb-10">
               <div className="flex gap-4 relative">
-                <div className="w-8 h-8 rounded-full bg-[#003fb1] flex items-center justify-center text-white z-10 shrink-0 shadow-lg shadow-[#003fb1]/30">
-                  <span className="material-symbols-outlined text-sm">check</span>
+                <div className="w-8 h-8 rounded-full bg-[var(--primary)] flex items-center justify-center text-white z-10 shrink-0 shadow-lg shadow-[var(--primary)]/30">
+                  <Check size={16} strokeWidth={3} />
                 </div>
-                <div className="absolute left-4 top-8 w-0.5 h-10 bg-[#003fb1]/20"></div>
+                <div className="absolute left-4 top-8 w-0.5 h-10 bg-[var(--primary)]/20"></div>
                 <div>
-                  <p className="text-sm font-bold text-[#003fb1]">Đã tiếp nhận yêu cầu</p>
-                  <p className="text-[10px] text-[#737686]">15:05 • Hệ thống đã xác nhận</p>
+                  <p className="text-sm font-bold text-[var(--primary)]">Đã tiếp nhận yêu cầu</p>
+                  <p className="text-[10px] text-[var(--text-sub)] font-medium mt-1">15:05 • Hệ thống đã xác nhận</p>
                 </div>
               </div>
 
               <div className="flex gap-4 relative">
-                <div className="w-8 h-8 rounded-full bg-[#fed01b] flex items-center justify-center text-[#6f5900] z-10 shrink-0 animate-pulse shadow-lg shadow-[#fed01b]/30">
-                  <div className="w-2 h-2 rounded-full bg-[#6f5900]"></div>
+                <div className="w-8 h-8 rounded-full bg-[var(--accent)] flex items-center justify-center text-amber-900 z-10 shrink-0 animate-pulse shadow-lg shadow-[var(--accent)]/30">
+                  <div className="w-2.5 h-2.5 rounded-full bg-amber-900"></div>
                 </div>
                 <div>
-                  <p className="text-sm font-bold">Kỹ thuật viên đang đến</p>
-                  <p className="text-[10px] text-[#737686]">Dự kiến: 08 phút nữa</p>
+                  <p className="text-sm font-bold text-[var(--text-main)]">Kỹ thuật viên đang đến</p>
+                  <p className="text-[10px] text-[var(--text-sub)] font-medium mt-1">Dự kiến: 08 phút nữa</p>
                 </div>
               </div>
             </div>
 
             {/* Technician Profile */}
-            <div className="bg-[#f3f4f6] p-6 rounded-[2rem] border border-[#edeef0] mb-6 shadow-sm">
+            <div className="bg-[var(--bg-body)] p-6 rounded-[2rem] border border-[var(--border)] mb-6 shadow-sm">
               <div className="flex items-center gap-4 mb-6">
                 <div className="relative">
                   <img src="https://i.pravatar.cc/150?u=tech" alt="Avatar" className="w-14 h-14 rounded-2xl object-cover border-2 border-white shadow-sm" />
                   <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm text-[#191c1e]">Nguyễn Văn Nam</h3>
-                  <div className="flex items-center text-[#735c00] text-[11px] font-bold">
-                    <span className="material-symbols-outlined text-xs mr-1" style={{ fontVariationSettings: "'FILL' 1" }}>star</span> 4.9 (124)
+                  <h3 className="font-bold text-sm text-[var(--text-main)]">Nguyễn Văn Nam</h3>
+                  <div className="flex items-center text-amber-600 text-[11px] font-bold mt-1">
+                    <Star size={12} fill="currentColor" className="mr-1" /> 4.9 (124)
                   </div>
                 </div>
               </div>
               <div className="flex gap-2">
-                <button className="flex-1 bg-[#003fb1] text-white py-3 rounded-full text-xs font-bold shadow-lg hover:bg-[#1a56db] transition-all flex items-center justify-center gap-2 active:scale-95">
-                  <span className="material-symbols-outlined text-sm">chat</span> Nhắn tin
+                <button className="flex-1 bg-[var(--primary)] text-white py-3 rounded-2xl text-xs font-bold shadow-lg shadow-[var(--primary)]/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 active:scale-95">
+                  <MessageCircle size={16} /> Nhắn tin
                 </button>
-                <button className="w-12 h-12 rounded-full border border-[#c3c5d7] flex items-center justify-center text-[#003fb1] hover:bg-white active:scale-90 transition-all">
-                  <span className="material-symbols-outlined">call</span>
+                <button className="w-12 h-12 rounded-2xl border border-[var(--border)] flex items-center justify-center text-[var(--primary)] bg-white hover:border-[var(--primary)]/30 hover:bg-[var(--primary)]/5 active:scale-90 transition-all shadow-sm">
+                  <Phone size={18} />
                 </button>
               </div>
             </div>
 
             {/* Problem Report */}
-            <div className="p-4 bg-[#ffdad6] rounded-2xl border border-[#ba1a1a]/10">
-              <p className="text-[10px] font-black text-[#93000a] mb-1 uppercase tracking-tighter">Sự cố báo cáo</p>
-              <p className="text-xs text-[#93000a]/80 leading-relaxed font-medium">Xe hết bình ắc quy, cần kích bình gấp tại vị trí hiện tại.</p>
+            <div className="p-5 bg-red-50 rounded-2xl border border-red-100">
+              <p className="text-[10px] font-black text-red-700 mb-1.5 uppercase tracking-widest">Sự cố báo cáo</p>
+              <p className="text-xs text-red-900/80 leading-relaxed font-semibold">Xe hết bình ắc quy, cần kích bình gấp tại vị trí hiện tại.</p>
             </div>
           </div>
         </section>
 
         {/* PANEL PHẢI: BẢN ĐỒ GOOGLE MAPS */}
-        <section className="flex-1 relative bg-[#e5e7eb]">
+        <section className="flex-1 relative bg-slate-100">
           <GoogleMap
             mapContainerStyle={{ width: '100%', height: '100%' }}
             center={userLocation}
@@ -147,20 +148,20 @@ const RescueTracking = () => {
           </GoogleMap>
 
           {/* Overlay UI: ETA Badge */}
-          <div className="absolute top-6 left-6 p-5 bg-white/90 backdrop-blur-xl rounded-[2rem] shadow-2xl border border-white flex items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-700">
-            <div className="w-12 h-12 rounded-full bg-[#fed01b] flex items-center justify-center text-[#6f5900] shadow-inner">
-              <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>timer</span>
+          <div className="absolute top-6 left-6 p-5 bg-white/95 backdrop-blur-xl rounded-[2rem] shadow-2xl border border-white flex items-center gap-4 animate-fade-in">
+            <div className="w-12 h-12 rounded-full bg-[var(--accent)] flex items-center justify-center text-amber-900 shadow-inner">
+              <Timer size={24} />
             </div>
             <div>
-              <p className="text-[10px] text-[#737686] font-black uppercase tracking-widest">Thời gian dự kiến</p>
-              <p className="text-2xl font-['Manrope'] font-black text-[#003fb1]">08 Phút</p>
+              <p className="text-[10px] text-[var(--text-sub)] font-black uppercase tracking-widest">Thời gian dự kiến</p>
+              <p className="text-2xl font-black text-[var(--primary)] tracking-tight">08 Phút</p>
             </div>
           </div>
 
           {/* Map Controls */}
           <div className="absolute bottom-10 right-8 flex flex-col gap-2">
-            <button className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl shadow-xl flex items-center justify-center text-[#003fb1] hover:bg-white transition-all active:scale-90 border border-white">
-              <span className="material-symbols-outlined">my_location</span>
+            <button className="w-12 h-12 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl flex items-center justify-center text-[var(--primary)] hover:bg-[var(--primary)]/5 transition-all active:scale-90 border border-white">
+              <Crosshair size={20} />
             </button>
           </div>
         </section>

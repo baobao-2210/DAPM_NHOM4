@@ -1,66 +1,82 @@
-import { Link } from 'react-router-dom';
+import React from 'react';
+import { HelpCircle, Phone, Mail, MessageSquare, ChevronRight } from 'lucide-react';
 
 const Support = () => {
+  const supportChannels = [
+    {
+      icon: <Phone className="text-blue-600" size={32} />,
+      title: "Hotline 24/7",
+      desc: "Gọi ngay khi bạn cần cứu hộ khẩn cấp.",
+      action: "1900 1234",
+      color: "bg-blue-50"
+    },
+    {
+      icon: <MessageSquare className="text-amber-600" size={32} />,
+      title: "Chat trực tuyến",
+      desc: "Hỗ trợ kỹ thuật và giải đáp thắc mắc.",
+      action: "Bắt đầu chat",
+      color: "bg-amber-50"
+    },
+    {
+      icon: <Mail className="text-emerald-600" size={32} />,
+      title: "Email hỗ trợ",
+      desc: "Gửi yêu cầu hỗ trợ qua hòm thư điện tử.",
+      action: "support@rescueguard.vn",
+      color: "bg-emerald-50"
+    }
+  ];
+
   const faqs = [
-    { question: 'Làm sao để đặt yêu cầu cứu hộ?', answer: 'Bạn vào trang Dịch vụ và chọn Yêu cầu cứu hộ, sau đó điền thông tin xe và vị trí.' },
-    { question: 'Thời gian phục vụ là bao lâu?', answer: 'Đội ngũ kỹ thuật sẽ có mặt trong 15-30 phút kể từ khi xác nhận yêu cầu.' },
-    { question: 'Tôi có thể hủy yêu cầu không?', answer: 'Bạn có thể hủy yêu cầu trong trang Lịch sử hoặc Hủy yêu cầu. Một khoản phí hủy có thể được áp dụng.' },
+    "Làm thế nào để yêu cầu cứu hộ?",
+    "Thời gian chờ đợi trung bình là bao lâu?",
+    "Tôi có thể thanh toán bằng những phương thức nào?",
+    "Làm sao để theo dõi vị trí xe cứu hộ?",
+    "Chính sách bảo hiểm tài sản như thế nào?"
   ];
 
   return (
-    <div className="bg-[#f8f9fb] min-h-screen text-[#191c1e] font-['Inter']">
-      <main className="pt-24 pb-20 px-6 md:px-12 max-w-6xl mx-auto">
-        <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-          <section className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-[#edeef0]">
-            <h1 className="text-4xl font-black font-['Manrope'] text-[#003fb1] mb-4">Trung tâm hỗ trợ</h1>
-            <p className="text-[#434654] text-sm leading-relaxed mb-8">
-              Nếu bạn cần trợ giúp, hãy tham khảo các câu hỏi thường gặp hoặc gửi phản hồi trực tiếp cho đội ngũ chúng tôi.
-            </p>
-
-            <div className="space-y-4">
-              {faqs.map((item, idx) => (
-                <div key={idx} className="rounded-[2rem] border border-[#edeef0] p-6 bg-[#f8f9fb]">
-                  <h3 className="font-black text-lg text-[#191c1e] mb-2">{item.question}</h3>
-                  <p className="text-sm text-[#434654] leading-relaxed">{item.answer}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <aside className="space-y-6">
-            <div className="bg-[#003fb1] text-white p-10 rounded-[2.5rem] shadow-xl border border-[#003fb1]/10">
-              <h2 className="text-2xl font-black mb-4">Bạn cần hỗ trợ gấp?</h2>
-              <p className="text-sm text-white/80 leading-relaxed mb-6">
-                Liên hệ ngay qua điện thoại hoặc gửi phản hồi để đội ngũ RescueGuard hỗ trợ nhanh nhất.
-              </p>
-              <div className="space-y-4 text-sm">
-                <div>
-                  <p className="font-bold uppercase text-[10px] tracking-widest text-white/70">Hotline</p>
-                  <p className="mt-1">0901 234 567</p>
-                </div>
-                <div>
-                  <p className="font-bold uppercase text-[10px] tracking-widest text-white/70">Email</p>
-                  <p className="mt-1">support@rescueguard.vn</p>
-                </div>
-              </div>
-
-              <Link
-                to="/feedback"
-                className="inline-flex items-center justify-center gap-2 mt-8 w-full bg-[#fed01b] text-[#6f5900] font-black uppercase py-4 rounded-full shadow-lg hover:opacity-95 transition-all"
-              >
-                Gửi phản hồi
-                <span className="material-symbols-outlined">send</span>
-              </Link>
-            </div>
-
-            <div className="bg-white p-8 rounded-[2.5rem] border border-[#edeef0] shadow-sm">
-              <h3 className="text-lg font-black mb-3">Giờ hỗ trợ</h3>
-              <p className="text-sm text-[#434654] leading-relaxed">
-                24/7 mọi ngày trong tuần. RescueGuard luôn sẵn sàng cho các tình huống khẩn cấp và tư vấn dịch vụ.
-              </p>
-            </div>
-          </aside>
+    <div className="bg-[var(--bg-body)] min-h-screen pt-24 pb-32">
+      <main className="max-w-4xl mx-auto px-6 animate-fade-in">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-black text-[var(--text-main)] mb-4">Chúng tôi có thể giúp gì cho bạn?</h1>
+          <p className="text-[var(--text-sub)] font-medium text-lg">Đội ngũ RescueGuard luôn sẵn sàng hỗ trợ bạn 24/7 trên mọi cung đường.</p>
         </div>
+
+        {/* Support Channels */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          {supportChannels.map((channel, idx) => (
+            <div key={idx} className="card p-6 flex flex-col items-center text-center group cursor-pointer hover:border-[var(--primary)] transition-all">
+              <div className={`w-16 h-16 ${channel.color} rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                {channel.icon}
+              </div>
+              <h3 className="font-black text-xl mb-2">{channel.title}</h3>
+              <p className="text-sm text-[var(--text-muted)] font-medium mb-4">{channel.desc}</p>
+              <span className="text-[var(--primary)] font-black uppercase tracking-widest text-xs">{channel.action}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* FAQs */}
+        <section className="card p-8">
+          <h2 className="font-black text-2xl mb-8 flex items-center gap-3">
+            <HelpCircle className="text-[var(--primary)]" />
+            Câu hỏi thường gặp
+          </h2>
+          <div className="divide-y divide-[var(--border)]">
+            {faqs.map((faq, idx) => (
+              <button key={idx} className="w-full flex items-center justify-between py-5 text-left group">
+                <span className="font-bold text-[var(--text-main)] group-hover:text-[var(--primary)] transition-colors">{faq}</span>
+                <ChevronRight size={20} className="text-[var(--text-muted)] group-hover:translate-x-1 transition-transform" />
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* Contact Form Placeholder */}
+        <section className="mt-12 text-center">
+          <p className="text-[var(--text-muted)] font-medium mb-6">Bạn vẫn còn thắc mắc khác?</p>
+          <button className="btn btn-primary px-12 py-4 shadow-xl">Gửi yêu cầu hỗ trợ</button>
+        </section>
       </main>
     </div>
   );
