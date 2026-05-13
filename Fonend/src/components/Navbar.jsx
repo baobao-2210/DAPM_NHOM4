@@ -1,6 +1,14 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const Navbar = () => {
+  const { isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
   return (
     <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md shadow-sm border-b border-[#edeef0]">
       <div className="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto">
@@ -36,6 +44,11 @@ const Navbar = () => {
           <Link to="/profile" className="material-symbols-outlined p-2 text-[#434654] hover:bg-slate-50 rounded-full transition-colors active:scale-90 inline-flex items-center justify-center">
             account_circle
           </Link>
+          {isAuthenticated && (
+            <button onClick={handleLogout} className="material-symbols-outlined p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors active:scale-90" title="Đăng xuất">
+              logout
+            </button>
+          )}
         </div>
       </div>
     </nav>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Shield, Truck, Zap, Lock, Phone } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function StaffLoginPage() {
   const navigate = useNavigate();
@@ -8,6 +9,8 @@ export default function StaffLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,21 +26,20 @@ export default function StaffLoginPage() {
     }
 
     setIsLoading(true);
-    // Giả lập gọi API xác thực
-    await new Promise(r => setTimeout(r, 900));
-
-    // Mock: chấp nhận bất kỳ thông tin hợp lệ
-    if (form.staffId.trim() && form.password.length >= 3) {
-      localStorage.setItem('partner_session', JSON.stringify({
-        staffId: form.staffId,
-        loginTime: new Date().toISOString(),
-        role: 'rescue_staff',
-      }));
-      navigate('/partner', { replace: true });
-    } else {
-      setError('Mã nhân viên hoặc mật khẩu không đúng.');
-    }
+    const result = await login(form.staffId, form.password);
     setIsLoading(false);
+
+    if (result.success) {
+      // Dựa vào role để điều hướng
+      const role = localStorage.getItem('access_token') ? JSON.parse(atob(localStorage.getItem('access_token')!.split('.')[1])).role : null;
+      if (role === 'admin') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/partner', { replace: true });
+      }
+    } else {
+      setError(result.message);
+    }
   };
 
   return (

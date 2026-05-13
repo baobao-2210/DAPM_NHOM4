@@ -1,14 +1,46 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 
-const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
+const Auth = ({ initialIsLogin = true }) => {
+  const [isLogin, setIsLogin] = useState(initialIsLogin);
+  const [emailOrPhone, setEmailOrPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { login } = useAuth();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Giả lập đăng nhập thành công và chuyển trang
-    navigate('/detail');
+    setError('');
+    
+    if (isLogin) {
+      const result = await login(emailOrPhone, password);
+      if (result.success) {
+        const token = localStorage.getItem('access_token');
+        if (token) {
+          try {
+            const role = JSON.parse(atob(token.split('.')[1])).role;
+            if (role === 'admin') {
+              navigate('/admin');
+              return;
+            }
+            if (role === 'staff') {
+              navigate('/partner');
+              return;
+            }
+          } catch (e) {
+            console.error(e);
+          }
+        }
+        navigate('/detail');
+      } else {
+        setError(result.message);
+      }
+    } else {
+      // Giả lập đăng ký
+      navigate('/detail');
+    }
   };
 
   return (
@@ -40,18 +72,19 @@ const Auth = () => {
             </div>
             <h2 className="font-['Manrope'] font-bold text-3xl mb-10">{isLogin ? "Chào mừng trở lại" : "Tạo tài khoản mới"}</h2>
             <form className="space-y-6" onSubmit={handleSubmit}>
+              {error && <div className="text-red-500 text-sm font-semibold">{error}</div>}
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase text-[#434654]">Tài khoản</label>
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#737686]">person</span>
-                  <input className="w-full pl-12 pr-4 py-4 bg-[#f3f4f6] border-0 rounded-2xl outline-none" placeholder="Email hoặc số điện thoại" type="text" required />
+                  <input value={emailOrPhone} onChange={e => setEmailOrPhone(e.target.value)} className="w-full pl-12 pr-4 py-4 bg-[#f3f4f6] border-0 rounded-2xl outline-none" placeholder="Email hoặc số điện thoại" type="text" required />
                 </div>
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase text-[#434654]">Mật khẩu</label>
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#737686]">lock</span>
-                  <input className="w-full pl-12 pr-4 py-4 bg-[#f3f4f6] border-0 rounded-2xl outline-none" placeholder="••••••••" type="password" required />
+                  <input value={password} onChange={e => setPassword(e.target.value)} className="w-full pl-12 pr-4 py-4 bg-[#f3f4f6] border-0 rounded-2xl outline-none" placeholder="••••••••" type="password" required />
                 </div>
               </div>
               <button type="submit" className="w-full py-4 bg-[#003fb1] text-white rounded-full font-bold text-lg hover:bg-[#1a56db] transition-all">

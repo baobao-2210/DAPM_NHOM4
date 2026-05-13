@@ -16,16 +16,13 @@ import NotificationsPage from './pages/admin/NotificationsPage';
 import MapPage from './pages/admin/MapPage';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
 
-// Guest pages
 import HomePage from './pages/guest/HomePage';
 import ServiceListPage from './pages/guest/ServiceListPage';
 import ServiceDetailPage from './pages/guest/ServiceDetailPage';
-import RegisterPage from './pages/guest/RegisterPage';
-import LoginPage from './pages/guest/LoginPage';
 import ForgotPasswordPage from './pages/guest/ForgotPasswordPage';
+import Auth from './pages/Customer/Auth';
 
 // Staff pages
-import StaffLoginPage from './pages/staff/LoginPage';
 import StaffDashboard from './pages/staff/Dashboard';
 import StaffChat from './pages/staff/Chat';
 import StaffHistory from './pages/staff/History';
@@ -50,13 +47,15 @@ export default function App() {
       <BrowserRouter>
         <Toaster position="top-right" />
         <Routes>
+          {/* Auth routes */}
+          <Route path="/login" element={<Auth />} />
+          <Route path="/register" element={<Auth initialIsLogin={false} />} />
+
           {/* Guest routes */}
           <Route element={<GuestLayout />}>
             <Route index element={<HomePage />} />
             <Route path="services" element={<ServiceListPage />} />
             <Route path="services/:id" element={<ServiceDetailPage />} />
-            <Route path="login" element={<LoginPage />} />
-            <Route path="register" element={<RegisterPage />} />
             <Route path="forgot-password" element={<ForgotPasswordPage />} />
           </Route>
 
@@ -78,7 +77,7 @@ export default function App() {
 
           {/* Staff / Partner routes */}
           {/* Login - không cần xác thực */}
-          <Route path="/partner/login" element={<StaffLoginPage />} />
+          <Route path="/partner/login" element={<Navigate to="/login" replace />} />
 
           {/* Các trang protected - cần đăng nhập */}
           <Route element={<StaffPrivateRoute />}>

@@ -78,12 +78,15 @@ export interface RescueRequest {
 // ==================== STAFF TYPES ====================
 export type StaffStatus = 'available' | 'busy' | 'offline' | 'on_break';
 
+export type StaffRole = 'leader' | 'senior' | 'staff' | 'driver';
+
 export interface Staff {
   id: string;
   name: string;
   phone: string;
   email: string;
   specialization: string[];
+  role: StaffRole;
   status: StaffStatus;
   location?: Location;
   currentRequestId?: string;

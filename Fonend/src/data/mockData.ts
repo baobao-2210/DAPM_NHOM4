@@ -21,11 +21,12 @@ export const mockVehicles: Vehicle[] = [
 
 // ==================== STAFF ====================
 export const mockStaff: Staff[] = [
-  { id: 's1', name: 'Nguyễn Hùng Dũng', phone: '0901111111', email: 'dung@rescue.vn', specialization: ['Động cơ', 'Điện xe'], status: 'available', rating: 4.9, totalCompleted: 312, joinedAt: '2023-01-10', location: { lat: 10.7769, lng: 106.7009, address: 'Quận 1, TP.HCM' } },
-  { id: 's2', name: 'Trần Minh Khoa', phone: '0902222222', email: 'khoa@rescue.vn', specialization: ['Vỏ xe', 'Kéo xe'], status: 'busy', rating: 4.7, totalCompleted: 208, joinedAt: '2023-03-05', currentRequestId: 'r1', location: { lat: 10.8231, lng: 106.6297, address: 'Quận 12, TP.HCM' } },
-  { id: 's3', name: 'Lê Quang Vinh', phone: '0903333333', email: 'vinh@rescue.vn', specialization: ['Nhiên liệu', 'Khóa xe'], status: 'available', rating: 4.8, totalCompleted: 176, joinedAt: '2023-06-20', location: { lat: 10.7956, lng: 106.7219, address: 'Bình Thạnh, TP.HCM' } },
-  { id: 's4', name: 'Phạm Đức Tài', phone: '0904444444', email: 'tai@rescue.vn', specialization: ['Tai nạn', 'Cứu hộ khẩn cấp'], status: 'on_break', rating: 4.6, totalCompleted: 145, joinedAt: '2023-09-01' },
-  { id: 's5', name: 'Võ Thành Nam', phone: '0905555555', email: 'nam@rescue.vn', specialization: ['Điện xe', 'Máy lạnh'], status: 'offline', rating: 4.5, totalCompleted: 98, joinedAt: '2024-01-15' },
+  { id: 's1', name: 'Nguyễn Hùng Dũng', phone: '0901111111', email: 'dung@rescue.vn', specialization: ['Động cơ', 'Điện xe'], role: 'leader', status: 'available', rating: 4.9, totalCompleted: 312, joinedAt: '2023-01-10', location: { lat: 10.7769, lng: 106.7009, address: 'Quận 1, TP.HCM' } },
+  { id: 's2', name: 'Trần Minh Khoa', phone: '0902222222', email: 'khoa@rescue.vn', specialization: ['Vỏ xe', 'Kéo xe'], role: 'driver', status: 'busy', rating: 4.7, totalCompleted: 208, joinedAt: '2023-03-05', currentRequestId: 'r1', location: { lat: 10.8231, lng: 106.6297, address: 'Quận 12, TP.HCM' } },
+  { id: 's3', name: 'Lê Quang Vinh', phone: '0903333333', email: 'vinh@rescue.vn', specialization: ['Nhiên liệu', 'Khóa xe'], role: 'senior', status: 'available', rating: 4.8, totalCompleted: 176, joinedAt: '2023-06-20', location: { lat: 10.7956, lng: 106.7219, address: 'Bình Thạnh, TP.HCM' } },
+  { id: 's4', name: 'Phạm Đức Tài', phone: '0904444444', email: 'tai@rescue.vn', specialization: ['Tai nạn', 'Cứu hộ khẩn cấp'], role: 'staff', status: 'on_break', rating: 4.6, totalCompleted: 145, joinedAt: '2023-09-01' },
+  { id: 's5', name: 'Võ Thành Nam', phone: '0905555555', email: 'nam@rescue.vn', specialization: ['Điện xe', 'Máy lạnh'], role: 'staff', status: 'offline', rating: 4.5, totalCompleted: 98, joinedAt: '2024-01-15' },
+
 ];
 
 // ==================== RESCUE REQUESTS ====================
