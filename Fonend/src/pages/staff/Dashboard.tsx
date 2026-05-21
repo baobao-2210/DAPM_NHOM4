@@ -1,295 +1,252 @@
+// src/pages/staff/Dashboard.tsx  — UC-21: Nhận yêu cầu cứu hộ
 import { useState } from 'react';
-import { MapPin, Phone, MessageSquare, Send, User, AlertCircle, Clock, Navigation, CheckCircle2, ChevronRight, FileText, BadgeDollarSign } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useStaffData } from '../../hooks/useStaffQueries';
 
-export default function StaffDashboard() {
-  const { activeTaskQuery, pendingQuery, actions } = useStaffData();
-  const [view, setView] = useState<'tracking' | 'invoice'>('tracking');
-  const [invoiceNote, setInvoiceNote] = useState('');
-  const [finalCost, setFinalCost] = useState(560000);
+const STATUS_COLOR: Record<string, { bg: string; text: string; label: string }> = {
+  TiepNhan:    { bg: 'bg-orange-100',   text: 'text-orange-700',  label: 'Chờ nhận' },
+  DangXuLy:    { bg: 'bg-blue-100',     text: 'text-blue-700',    label: 'Đang xử lý' },
+  HoanThanh:   { bg: 'bg-green-100',    text: 'text-green-700',   label: 'Hoàn thành' },
+  DaHuy:       { bg: 'bg-red-100',      text: 'text-red-700',     label: 'Đã hủy' },
+};
 
-  const activeRequest = activeTaskQuery.data;
-  const pendingList = pendingQuery.data || [];
+const fmt  = (n?: number) => n != null ? n.toLocaleString('vi-VN') + 'đ' : '—';
+const fmtD = (d?: string) =>
+  d ? new Date(d).toLocaleString('vi-VN', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
 
-  if (activeTaskQuery.isLoading || pendingQuery.isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[70vh] text-[var(--text-muted)]">
-        <div className="w-10 h-10 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="font-bold uppercase tracking-widest text-xs">Đang đồng bộ dữ liệu hệ thống...</p>
+export default function Dashboard() {
+  const navigate = useNavigate();
+  const [tab, setTab] = useState<'pending' | 'active'>('pending');
+  const { pendingQuery, activeTaskQuery, actions, staffInfo } = useStaffData();
+
+  const pending = pendingQuery.data ?? [];
+  const active  = activeTaskQuery.data;
+
+  const handleAccept = (id: number) => {
+    if (!window.confirm('Xác nhận nhận yêu cầu cứu hộ này?')) return;
+    actions.accept.mutate(id, {
+      onSuccess: () => setTab('active'),
+    });
+  };
+
+  return (
+    <div className="p-6 max-w-5xl mx-auto">
+      {/* Page header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Nhiệm vụ hiện tại</h1>
+        <p className="text-gray-500 text-sm mt-1">
+          Quản lý và xử lý các yêu cầu cứu hộ được phân công
+        </p>
       </div>
-    );
-  }
 
-  // ================= CHẾ ĐỘ 1: KHI ĐANG RẢNH - CHỜ NHẬN ĐƠN =================
-  if (!activeRequest) {
-    if (pendingList.length === 0) {
-      return (
-        <div className="animate-fade-in max-w-4xl mx-auto py-12">
-          <div className="card p-12 flex flex-col items-center justify-center text-center relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 via-[var(--primary)] to-purple-500"></div>
-            
-            <div className="relative">
-              <div className="absolute inset-0 bg-blue-100 rounded-full animate-ping opacity-75"></div>
-              <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center relative z-10 mb-6 border-4 border-white shadow-lg">
-                <Navigation size={40} className="text-[var(--primary)]" />
-              </div>
-            </div>
-            
-            <h2 className="text-2xl font-black text-[var(--text-main)] mb-3 tracking-tight">Sẵn sàng nhận nhiệm vụ</h2>
-            <p className="text-[var(--text-sub)] max-w-md mx-auto mb-8 font-medium">Hệ thống đang quét các sự cố xung quanh khu vực của bạn. Vui lòng giữ ứng dụng mở và kết nối mạng ổn định.</p>
-            
-            <div className="bg-[var(--bg-body)] px-6 py-4 rounded-2xl border border-[var(--border)] flex items-center gap-3">
-              <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-              </span>
-              <span className="text-sm font-bold text-[var(--text-main)]">Trạng thái: Đang trực tuyến</span>
-            </div>
+      {/* Stats bar */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        {[
+          { label: 'Đơn chờ nhận',    value: pending.length,    color: 'text-orange-600', bg: 'bg-orange-50  border-orange-100' },
+          { label: 'Đang xử lý',      value: active ? 1 : 0,   color: 'text-blue-600',   bg: 'bg-blue-50    border-blue-100' },
+          { label: 'Hoàn thành (tháng)', value: staffInfo?.thongKe?.tongDonHoanThanh ?? 0, color: 'text-green-600', bg: 'bg-green-50 border-green-100' },
+        ].map(s => (
+          <div key={s.label} className={`rounded-xl border p-4 ${s.bg}`}>
+            <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+            <p className="text-gray-600 text-xs mt-0.5">{s.label}</p>
           </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="animate-fade-in max-w-5xl mx-auto space-y-8">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-amber-500">
-              <AlertCircle size={14} /> <span>Yêu cầu khẩn cấp</span>
-            </div>
-            <h1 className="text-4xl font-black text-[var(--text-main)] tracking-tight">Yêu Cầu Đang Chờ</h1>
-            <p className="text-[var(--text-sub)] max-w-2xl font-medium">Có {pendingList.length} yêu cầu cứu hộ xung quanh bạn. Hãy tiếp nhận ngay.</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {pendingList.map((req: any) => (
-            <div key={req.id} className="card p-0 overflow-hidden hover:border-[var(--primary)]/40 hover:shadow-lg hover:shadow-[var(--primary)]/5 transition-all group flex flex-col">
-              <div className="p-6 flex-1">
-                <div className="flex justify-between items-start mb-4">
-                  <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-red-100 text-red-700">
-                    <Clock size={12} className="mr-1.5" /> Chờ xử lý
-                  </span>
-                </div>
-                
-                <h3 className="text-2xl font-black text-[var(--text-main)] mb-1">{req.loaiSuCo || 'Sự cố khẩn cấp'}</h3>
-                <div className="text-sm font-bold text-[var(--primary)] mb-6 flex items-center gap-1.5">
-                  <User size={14} /> Khách hàng: {req.tenKhachHang || 'Khách vãng lai'}
-                </div>
-                
-                <div className="flex items-start gap-2.5 text-[var(--text-sub)] bg-[var(--bg-body)] p-3.5 rounded-2xl border border-[var(--border)]">
-                  <MapPin size={18} className="text-[var(--primary)] flex-shrink-0 mt-0.5" /> 
-                  <span className="font-medium text-sm leading-relaxed">{req.diaChi || 'Không rõ địa chỉ'}</span>
-                </div>
-              </div>
-              
-              <div className="p-4 bg-[var(--bg-body)] border-t border-[var(--border)]">
-                <button 
-                  onClick={() => actions.accept.mutate(req.id)}
-                  disabled={actions.accept.isPending}
-                  className="btn btn-primary w-full py-3.5 shadow-md flex items-center justify-center gap-2 group-hover:scale-[1.02] transition-transform"
-                >
-                  {actions.accept.isPending ? 'Đang nhận...' : <>Tiếp Nhận Nhiệm Vụ <ChevronRight size={18} /></>}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+        ))}
       </div>
-    );
-  }
 
-  // ================= CHẾ ĐỘ 2: ĐANG LÀM NHIỆM VỤ - CẬP NHẬT TRẠNG THÁI =================
-  if (view === 'tracking') {
-    return (
-      <div className="animate-fade-in max-w-6xl mx-auto space-y-6 h-[calc(100vh-100px)] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between shrink-0">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[var(--primary)] mb-1">
-              <span className="relative flex h-2 w-2 mr-1">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--primary)] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--primary)]"></span>
-              </span>
-              Nhiệm vụ đang thực hiện
-            </div>
-            <h1 className="text-3xl font-black text-[var(--text-main)] tracking-tight">Cứu hộ: {activeRequest.loaiSuCo || 'Sửa chữa'}</h1>
-          </div>
-          <button 
-            onClick={() => setView('invoice')}
-            className="btn bg-white border border-[var(--border)] text-[var(--text-main)] hover:border-[var(--primary)] hover:text-[var(--primary)] shadow-sm"
+      {/* Tabs */}
+      <div className="flex gap-1 bg-gray-100 rounded-lg p-1 mb-5 w-fit">
+        {[
+          { key: 'pending', label: `Đơn chờ nhận (${pending.length})` },
+          { key: 'active',  label: active ? 'Đơn đang xử lý' : 'Đang rảnh' },
+        ].map(t => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key as any)}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              tab === t.key
+                ? 'bg-white text-[#1e3a8a] shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
           >
-            Chuyển sang Hoá đơn
+            {t.label}
           </button>
-        </div>
+        ))}
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 flex-1 min-h-0">
-          {/* Map Area */}
-          <div className="card bg-slate-900 overflow-hidden relative min-h-[400px]">
-            <div className="absolute inset-0 bg-[url('https://maps.gstatic.com/tactile/basemap/roadmap-2x.png')] opacity-30 bg-cover bg-center"></div>
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
-              <MapPin size={48} className="text-slate-500 mb-4 opacity-50" />
-              <p className="font-bold tracking-widest uppercase text-sm">Hệ Thống Bản Đồ GPS</p>
+      {/* ── Pending list ── */}
+      {tab === 'pending' && (
+        <>
+          {pendingQuery.isLoading ? (
+            <div className="text-center py-20 text-gray-400">
+              <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-sm">Đang tải danh sách...</p>
             </div>
-            
-            {/* Overlay Info on Map */}
-            <div className="absolute bottom-6 left-6 right-6 bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-xl flex items-center justify-between border border-white/50">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-[var(--primary)]/10 text-[var(--primary)] rounded-full flex items-center justify-center">
-                  <Navigation size={20} />
-                </div>
-                <div>
-                  <div className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-0.5">Điểm đến</div>
-                  <div className="font-bold text-[var(--text-main)] truncate max-w-sm">{activeRequest.diaChi}</div>
-                </div>
+          ) : pending.length === 0 ? (
+            <div className="text-center py-20 bg-white rounded-xl border border-dashed border-gray-200">
+              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-6 h-6 text-gray-400">
+                  <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+                  <rect x="9" y="3" width="6" height="4" rx="1"/>
+                </svg>
               </div>
-              <div className="text-right">
-                <div className="text-2xl font-black text-[var(--primary)]">15<span className="text-sm">phút</span></div>
-                <div className="text-xs font-bold text-[var(--text-muted)]">Khoảng cách: 4.2km</div>
-              </div>
+              <p className="text-gray-600 font-medium">Không có đơn chờ phù hợp</p>
+              <p className="text-gray-400 text-sm mt-1">Các đơn sẽ xuất hiện khi phù hợp với dịch vụ và khu vực của bạn</p>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-3">
+              {pending.map(item => (
+                <div key={item.id} className="bg-white rounded-xl border border-gray-200 hover:border-blue-200 hover:shadow-sm transition-all overflow-hidden">
+                  {/* Colored top bar */}
+                  <div className="h-1 bg-orange-400" />
+                  <div className="p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      {/* Left: info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-sm font-bold text-gray-500">#{item.id}</span>
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_COLOR['TiepNhan'].bg} ${STATUS_COLOR['TiepNhan'].text}`}>
+                            Chờ nhận
+                          </span>
+                          <span className="ml-auto text-xs text-gray-400">{fmtD(item.ngayTao)}</span>
+                        </div>
 
-          {/* Info Panel */}
-          <div className="flex flex-col gap-6 overflow-y-auto pr-2">
-            <div className="card p-6">
-              <h3 className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-4">Thông Tin Khách Hàng</h3>
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-14 h-14 bg-gradient-to-br from-[var(--primary)] to-blue-600 text-white rounded-2xl flex items-center justify-center shadow-md font-bold text-xl">
-                  {activeRequest.tenKhachHang ? activeRequest.tenKhachHang.charAt(0) : 'K'}
-                </div>
-                <div>
-                  <div className="text-lg font-black text-[var(--text-main)]">{activeRequest.tenKhachHang || 'Khách hàng'}</div>
-                  <div className="text-sm font-bold text-[var(--text-sub)] mt-1">{activeRequest.soDienThoai || '09xx xxx xxx'}</div>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <button className="btn bg-[var(--bg-body)] border border-[var(--border)] text-[var(--text-main)] hover:border-[var(--primary)] hover:text-[var(--primary)] hover:bg-[var(--primary)]/5">
-                  <Phone size={16} /> Gọi điện
-                </button>
-                <button className="btn bg-[var(--bg-body)] border border-[var(--border)] text-[var(--text-main)] hover:border-[var(--primary)] hover:text-[var(--primary)] hover:bg-[var(--primary)]/5">
-                  <MessageSquare size={16} /> Nhắn tin
-                </button>
-              </div>
-            </div>
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                          <div>
+                            <span className="text-gray-400 text-xs block">Khách hàng</span>
+                            <span className="font-semibold text-gray-800">{item.tenKhachHang}</span>
+                            <span className="text-blue-600 ml-2 text-xs">{item.soDienThoai}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-400 text-xs block">Phương tiện</span>
+                            <span className="font-semibold text-gray-800">{item.bienSo}</span>
+                            <span className="text-gray-500 ml-1 text-xs">{item.hangXe} {item.dongXe}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-400 text-xs block">Dịch vụ</span>
+                            <span className="font-semibold text-blue-700">{item.tenDichVu}</span>
+                            <span className="text-green-600 ml-2 text-xs font-medium">{fmt(item.giaCoBan)}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-400 text-xs block">Địa điểm</span>
+                            <span className="text-gray-700 text-sm">{item.noiSuCo}</span>
+                            <span className="text-gray-400 text-xs ml-1">({item.tenPhuongXa})</span>
+                          </div>
+                        </div>
 
-            <div className="card p-6 flex-1 flex flex-col">
-              <h3 className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-4">Trạng Thái & Thao Tác</h3>
-              
-              <div className="p-4 bg-[var(--primary)]/5 rounded-2xl border border-[var(--primary)]/20 mb-auto">
-                <div className="text-[10px] text-[var(--primary)] font-black uppercase tracking-widest mb-1.5">Tình Trạng Hiện Tại</div>
-                <div className="text-lg font-black text-[var(--primary)]">
-                  {activeRequest.trangThaiHienTai === 'accepted' ? 'Đang di chuyển đến khách' : activeRequest.trangThaiHienTai}
+                        {item.moTaSuCo && (
+                          <div className="mt-3 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 text-sm text-amber-800">
+                            <span className="font-medium">Ghi chú: </span>{item.moTaSuCo}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Right: actions */}
+                      <div className="flex flex-col gap-2 shrink-0">
+                        <button
+                          onClick={() => handleAccept(item.id)}
+                          disabled={actions.accept.isPending}
+                          className="px-4 py-2 bg-[#1e3a8a] hover:bg-blue-800 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap"
+                        >
+                          {actions.accept.isPending ? 'Đang nhận...' : 'Nhận nhiệm vụ'}
+                        </button>
+                        <button
+                          onClick={() => navigate(`/partner/yeucau/${item.id}`)}
+                          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+                        >
+                          Xem chi tiết
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ── Active task ── */}
+      {tab === 'active' && (
+        <>
+          {!active ? (
+            <div className="text-center py-20 bg-white rounded-xl border border-dashed border-gray-200">
+              <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-6 h-6 text-green-500">
+                  <path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
               </div>
-              
-              <button 
-                onClick={() => {
-                  actions.updateStatus.mutate({ id: activeRequest.id, status: 'arrived' });
-                  setView('invoice');
-                }} 
-                disabled={actions.updateStatus.isPending}
-                className="btn btn-primary w-full py-4 text-base shadow-lg shadow-[var(--primary)]/30 mt-6"
+              <p className="text-gray-600 font-medium">Bạn đang rảnh</p>
+              <p className="text-gray-400 text-sm mt-1">Chuyển sang tab "Đơn chờ nhận" để nhận nhiệm vụ mới</p>
+              <button
+                onClick={() => setTab('pending')}
+                className="mt-4 px-5 py-2 bg-[#1e3a8a] text-white text-sm font-medium rounded-lg hover:bg-blue-800 transition-colors"
               >
-                {actions.updateStatus.isPending ? 'Đang cập nhật...' : <><MapPin size={20} /> Xác nhận Đã Đến Hiện Trường</>}
+                Xem đơn chờ
               </button>
             </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+          ) : (
+            <div className="bg-white rounded-xl border border-blue-200 shadow-sm overflow-hidden">
+              <div className="h-1 bg-blue-600" />
+              <div className="p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-sm font-bold text-gray-500">#{active.id}</span>
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Đang xử lý</span>
+                      {active.subStatus && (
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
+                          {active.subStatus === 'DangDen' ? 'Đang di chuyển'
+                           : active.subStatus === 'DangSua' ? 'Đang sửa chữa'
+                           : active.subStatus === 'DangKiemTra' ? 'Đang kiểm tra'
+                           : active.subStatus}
+                        </span>
+                      )}
+                    </div>
 
-  // ================= CHẾ ĐỘ 3: CHỐT HÓA ĐƠN VÀ HOÀN THÀNH =================
-  return (
-    <div className="animate-fade-in max-w-5xl mx-auto space-y-8 pb-10">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[var(--primary)]">
-            <CheckCircle2 size={14} /> <span>Bước cuối cùng</span>
-          </div>
-          <h1 className="text-4xl font-black text-[var(--text-main)] tracking-tight">Xác nhận hoàn thành</h1>
-          <p className="text-[var(--text-sub)] max-w-2xl font-medium">Kiểm tra thông tin chi tiết nhiệm vụ và chi phí trước khi gửi hóa đơn cho khách.</p>
-        </div>
-        <button 
-          onClick={() => {
-            actions.complete.mutate({ id: activeRequest.id, finalCost: finalCost });
-            setView('tracking');
-          }} 
-          disabled={actions.complete.isPending}
-          className="btn py-3.5 px-6 font-bold shadow-lg bg-emerald-500 hover:bg-emerald-600 text-white border-none"
-        >
-          {actions.complete.isPending ? 'Đang xử lý...' : <>Hoàn thành & Gửi báo cáo <Send size={18} /></>}
-        </button>
-      </div>
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                      <div>
+                        <p className="text-gray-400 text-xs">Khách hàng</p>
+                        <p className="font-semibold text-gray-800">{active.tenKhachHang}</p>
+                        <a href={`tel:${active.soDienThoai}`} className="text-blue-600 text-xs hover:underline">
+                          {active.soDienThoai}
+                        </a>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-xs">Phương tiện</p>
+                        <p className="font-semibold text-gray-800">{active.bienSo}</p>
+                        <p className="text-gray-500 text-xs">{active.hangXe} {active.dongXe} {active.mauXe && `- ${active.mauXe}`}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-xs">Dịch vụ</p>
+                        <p className="font-semibold text-blue-700">{active.tenDichVu}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-xs">Địa điểm sự cố</p>
+                        <p className="text-gray-700">{active.noiSuCo}</p>
+                      </div>
+                    </div>
+                  </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
-        <div className="space-y-6">
-          <div className="card p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <FileText className="text-[var(--primary)]" size={24} />
-              <h3 className="text-xl font-black text-[var(--text-main)]">Thông tin hóa đơn</h3>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-6 p-5 bg-[var(--bg-body)] rounded-2xl border border-[var(--border)] mb-8">
-              <div>
-                <div className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1.5">Khách Hàng</div>
-                <div className="text-base font-black text-[var(--text-main)]">{activeRequest.tenKhachHang}</div>
+                  <div className="flex flex-col gap-2 shrink-0">
+                    <button
+                      onClick={() => navigate(`/partner/yeucau/${active.id}`)}
+                      className="px-4 py-2 bg-[#1e3a8a] hover:bg-blue-800 text-white text-sm font-semibold rounded-lg transition-colors"
+                    >
+                      Cập nhật tiến trình
+                    </button>
+                    <button
+                      onClick={() => navigate(`/partner/chat/${active.id}`)}
+                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+                    >
+                      Nhắn tin khách
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div>
-                <div className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1.5">Loại Sự Cố</div>
-                <div className="text-base font-black text-[var(--text-main)]">{activeRequest.loaiSuCo || 'Sửa chữa'}</div>
-              </div>
             </div>
-            
-            <div>
-              <div className="text-xs font-black text-[var(--text-muted)] uppercase tracking-widest mb-3">Chi Phí Thực Tế Thu Khách (VNĐ)</div>
-              <div className="relative">
-                <BadgeDollarSign size={24} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-                <input 
-                  type="number" 
-                  value={finalCost} 
-                  onChange={(e) => setFinalCost(Number(e.target.value))}
-                  className="w-full bg-white border-2 border-[var(--border)] rounded-2xl pl-14 pr-6 py-4 text-2xl font-black focus:border-[var(--primary)] outline-none transition-all focus:ring-4 focus:ring-[var(--primary)]/10 text-[var(--primary)]" 
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="card p-8">
-            <h3 className="text-sm font-black text-[var(--text-muted)] uppercase tracking-widest mb-4">Ghi chú tình trạng / Kết quả</h3>
-            <textarea 
-              value={invoiceNote}
-              onChange={(e) => setInvoiceNote(e.target.value)}
-              className="w-full bg-[var(--bg-body)] border border-[var(--border)] rounded-2xl p-5 outline-none transition-all focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/5 resize-none font-medium text-sm"
-              rows={5} 
-              placeholder="Ghi chú chi tiết kết quả sửa chữa, các phụ tùng đã thay thế (nếu có)..." 
-            />
-          </div>
-        </div>
-
-        <div className="card p-0 overflow-hidden h-fit border-2 border-[var(--primary)]/20 shadow-xl">
-          <div className="bg-gradient-to-br from-[var(--primary)] to-blue-700 p-6 text-white text-center">
-            <h3 className="text-xs font-bold uppercase tracking-widest opacity-80 mb-1">Tổng Kết Thanh Toán</h3>
-            <div className="text-3xl font-black mt-2">{new Intl.NumberFormat('vi-VN').format(finalCost)} ₫</div>
-          </div>
-          <div className="p-6 bg-white">
-            <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex gap-3 text-amber-800">
-              <AlertCircle size={20} className="flex-shrink-0" />
-              <p className="text-xs font-bold leading-relaxed">
-                Xin hãy xác nhận bạn đã nhận đủ <span className="font-black">{new Intl.NumberFormat('vi-VN').format(finalCost)}đ</span> tiền mặt hoặc chuyển khoản trực tiếp từ khách hàng trước khi bấm Hoàn thành.
-              </p>
-            </div>
-            
-            <button 
-              onClick={() => { setView('tracking'); }} 
-              className="btn bg-[var(--bg-body)] text-[var(--text-main)] hover:bg-gray-200 border-none w-full mt-4 font-bold"
-            >
-              Quay lại theo dõi map
-            </button>
-          </div>
-        </div>
-      </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

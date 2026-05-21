@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Đường dẫn tới Backend C# của đồng đội bạn
-export const API_BASE_URL = 'https://localhost:64616/api';
+export const API_BASE_URL = 'https://localhost:54343/api';
 
 const axiosClient = axios.create({
   baseURL: API_BASE_URL,

@@ -22,21 +22,23 @@ import ServiceDetailPage from './pages/guest/ServiceDetailPage';
 import ForgotPasswordPage from './pages/guest/ForgotPasswordPage';
 import Auth from './pages/Customer/Auth';
 
-// Staff pages
-import StaffDashboard from './pages/staff/Dashboard';
-import StaffChat from './pages/staff/Chat';
-import StaffHistory from './pages/staff/History';
-import StaffProfile from './pages/staff/Profile';
-import StaffPrivateRoute from './components/StaffPrivateRoute';
+// ── Staff / Nhân viên cứu hộ ──────────────────────────────────────────────────
+import StaffDashboard     from './pages/staff/Dashboard';
+import StaffRequestDetail from './pages/staff/RequestDetail'; // UC-22/23/24 ← MỚI
+import StaffChat          from './pages/staff/Chat';
+import StaffHistory       from './pages/staff/History';
+import StaffProfile       from './pages/staff/Profile';
+import StaffServices      from './pages/staff/Services';       // UC-28 ← MỚI
+import StaffPrivateRoute  from './components/StaffPrivateRoute';
 
 const queryClient = new QueryClient();
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
-    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '50vh', gap: 12 }}>
-      <div style={{ fontSize: 48 }}>🚧</div>
-      <h2 style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: 22, fontWeight: 700 }}>{title}</h2>
-      <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Tính năng đang được phát triển.</p>
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'50vh', gap:12 }}>
+      <div style={{ fontSize:48 }}>🚧</div>
+      <h2 style={{ fontSize:22, fontWeight:700 }}>{title}</h2>
+      <p style={{ color:'var(--text-muted)', fontSize:14 }}>Tính năng đang được phát triển.</p>
     </div>
   );
 }
@@ -47,50 +49,63 @@ export default function App() {
       <BrowserRouter>
         <Toaster position="top-right" />
         <Routes>
-          {/* Auth routes */}
-          <Route path="/login" element={<Auth />} />
+
+          {/* ── Auth ── */}
+          <Route path="/login"    element={<Auth />} />
           <Route path="/register" element={<Auth initialIsLogin={false} />} />
 
-          {/* Guest routes */}
+          {/* ── Guest ── */}
           <Route element={<GuestLayout />}>
             <Route index element={<HomePage />} />
-            <Route path="services" element={<ServiceListPage />} />
+            <Route path="services"     element={<ServiceListPage />} />
             <Route path="services/:id" element={<ServiceDetailPage />} />
             <Route path="forgot-password" element={<ForgotPasswordPage />} />
           </Route>
 
-          {/* Admin routes */}
+          {/* ── Admin ── */}
           <Route path="/admin" element={<DashboardLayout />}>
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
-            <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="map" element={<MapPage />} />
-            <Route path="requests" element={<RequestsPage />} />
-            <Route path="requests/:id" element={<RequestsPage />} />
-            <Route path="staff" element={<StaffPage />} />
-            <Route path="vehicles" element={<VehiclesPage />} />
-            <Route path="services" element={<ServicesPage />} />
-            <Route path="reports" element={<PlaceholderPage title="Báo Cáo & Thống Kê" />} />
-            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="dashboard"     element={<DashboardPage />} />
+            <Route path="map"           element={<MapPage />} />
+            <Route path="requests"      element={<RequestsPage />} />
+            <Route path="requests/:id"  element={<RequestsPage />} />
+            <Route path="staff"         element={<StaffPage />} />
+            <Route path="vehicles"      element={<VehiclesPage />} />
+            <Route path="services"      element={<ServicesPage />} />
+            <Route path="reports"       element={<PlaceholderPage title="Báo Cáo & Thống Kê" />} />
+            <Route path="users"         element={<AdminUsersPage />} />
             <Route path="notifications" element={<NotificationsPage />} />
-            <Route path="settings" element={<PlaceholderPage title="Cài Đặt Hệ Thống" />} />
+            <Route path="settings"      element={<PlaceholderPage title="Cài Đặt Hệ Thống" />} />
           </Route>
 
-          {/* Staff / Partner routes */}
-          {/* Login - không cần xác thực */}
+          {/* ── Partner / Nhân viên cứu hộ ── */}
           <Route path="/partner/login" element={<Navigate to="/login" replace />} />
 
-          {/* Các trang protected - cần đăng nhập */}
           <Route element={<StaffPrivateRoute />}>
             <Route path="/partner" element={<StaffLayout />}>
+              {/* UC-21: Trang chủ — đơn chờ + đang xử lý */}
               <Route index element={<StaffDashboard />} />
-              <Route path="chat" element={<StaffChat />} />
+
+              {/* UC-22/23/24: Chi tiết + cập nhật trạng thái + hoàn thành */}
+              <Route path="yeucau/:id" element={<StaffRequestDetail />} />
+
+              {/* UC-25: Chat với khách hàng */}
+              <Route path="chat/:id" element={<StaffChat />} />
+
+              {/* UC-26: Lịch cứu hộ theo tháng */}
               <Route path="history" element={<StaffHistory />} />
+
+              {/* UC-27: Cập nhật thông tin cá nhân */}
               <Route path="profile" element={<StaffProfile />} />
+
+              {/* UC-28: Cập nhật dịch vụ cung cấp */}
+              <Route path="services" element={<StaffServices />} />
             </Route>
           </Route>
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
+
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>

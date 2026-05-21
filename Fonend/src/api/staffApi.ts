@@ -1,121 +1,172 @@
+// src/api/staffApi.ts
 import axiosClient from './axiosClient';
 
-// ======================= MOCK DATA =======================
-const USE_MOCK = true; // Đặt thành false để gọi API thật
+// ─── Types ────────────────────────────────────────────────────────────────────
+export type SubStatus = 'DangDen' | 'DangSua' | 'DangKiemTra';
 
-let mockPending = [
-  { id: '101', loaiSuCo: 'Thay lốp dự phòng', tenKhachHang: 'Nguyễn Văn A', diaChi: '123 Lê Lợi, Quận 1, TP.HCM', soDienThoai: '0901234567' },
-  { id: '102', loaiSuCo: 'Kích bình ắc quy', tenKhachHang: 'Trần Thị B', diaChi: '456 Nguyễn Huệ, Quận 1, TP.HCM', soDienThoai: '0909876543' }
-];
+export interface YeuCauItem {
+  id: number;
+  trangThaiHienTai: string;
+  subStatus?: string;
+  moTaSuCo: string;
+  noiSuCo: string;
+  ngayTao: string;
+  ngayHoanThanh?: string;
+  lyDoHuy?: string;
+  chiPhiDuKien?: number;
+  chiPhiThucTe?: number;
+  phiDichVu?: number;
+  // KH
+  tenKhachHang: string;
+  soDienThoai: string;
+  avatarKhachHang?: string;
+  idTaiKhoanKhachHang: number;
+  // Xe
+  bienSo: string; hangXe: string; dongXe: string; mauXe?: string; tenLoaiXe: string;
+  // Dịch vụ
+  tenDichVu: string; tenDanhMuc: string; giaCoBan: number;
+  // Khu vực
+  tenPhuongXa: string; tenTinh: string; kinhDo?: number; viDo?: number;
+  // Detail only
+  lichSuTrangThai?: LichSuItem[];
+  danhGia?: DanhGiaItem;
+}
 
-let mockActive: any = null;
+export interface LichSuItem {
+  idLichSu: number;
+  trangThai: string;
+  ghiChu: string;
+  thoiGianCapNhat: string;
+}
 
-let mockHistory = [
-  { id: 'h1', tenKhachHang: 'Lê Văn C', diaChi: 'Ngã tư Hàng Xanh, Bình Thạnh', chiPhiThucTe: 450000 },
-  { id: 'h2', tenKhachHang: 'Phạm Thị D', diaChi: 'Khu công nghệ cao, Quận 9', chiPhiThucTe: 800000 }
-];
+export interface DanhGiaItem {
+  soSao: number;
+  nhanXet: string;
+  thoiGian: string;
+}
 
-let mockProfile = {
-  tenNhanVien: 'Trần Hữu Nam',
-  soDienThoai: '0987654321',
-  email: 'nam.tran@rescuevn.com',
-  services: [
-    { id: '1', name: 'Kéo xe', active: true },
-    { id: '2', name: 'Kích bình', active: false },
-    { id: '3', name: 'Thay lốp', active: true }
-  ]
-};
+export interface TinNhanItem {
+  id: number;
+  noiDung: string;
+  loai: string;
+  fileUrl?: string;
+  thoiGianGui: string;
+  idTaiKhoanGui: number;
+  tenNguoiGui: string;
+  avatarNguoiGui?: string;
+  isMyMessage: boolean;
+}
 
-// Hàm delay để mô phỏng thời gian chờ mạng (loading state)
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-// =========================================================
+export interface LichCuuHoItem {
+  id: number;
+  trangThaiHienTai: string;
+  tenKhachHang: string;
+  soDienThoai: string;
+  tenDichVu: string;
+  noiSuCo: string;
+  tenPhuongXa: string;
+  tenTinh: string;
+  ngayTao: string;
+  ngayHoanThanh?: string;
+  chiPhiThucTe?: number;
+}
 
+export interface ThongKe {
+  tongDon: number;
+  donHoanThanh: number;
+  donDangXuLy: number;
+  donDaHuy: number;
+  tongThuNhap: number;
+}
+
+export interface NhanVienProfile {
+  idNhanVien: number;
+  idTaiKhoan: number;
+  hoTen: string;
+  email: string;
+  soDienThoai: string;
+  ngaySinh?: string;
+  avatar?: string;
+  trangThaiNhanViec: boolean;
+  diemTb: number;
+  moTa?: string;
+  khuVucPhucVu: { idPhuongXa: number; tenPhuongXa: string; tenTinh: string }[];
+  dichVuCungCap: { idDichVu: number; tenDichVu: string; giaCoBan: number; tenDanhMuc: string }[];
+  thongKe: { tongDonHoanThanh: number };
+}
+
+export interface DichVuOption {
+  id: number; name: string; giaCoBan: number; moTa?: string; tenDanhMuc: string;
+}
+
+// ─── API functions ─────────────────────────────────────────────────────────────
 export const staffApi = {
-  // UC-21 & UC-22: Lấy đơn chờ và Nhận đơn
-  getPending: async () => {
-    if (USE_MOCK) { await delay(500); return mockPending; }
-    return axiosClient.get('/YeuCau/pending').then(res => res.data);
-  },
-  
-  getActive: async (staffId: string) => {
-    if (USE_MOCK) { await delay(500); return mockActive; }
-    return axiosClient.get(`/YeuCau/active-task/${staffId}`).then(res => res.data);
-  },
-  
-  accept: async (id: string | number, staffId: string) => {
-    if (USE_MOCK) {
-      await delay(800);
-      const task = mockPending.find(t => t.id == id);
-      if (task) {
-        mockActive = { ...task, trangThaiHienTai: 'accepted' };
-        mockPending = mockPending.filter(t => t.id != id);
-      }
-      return mockActive;
-    }
-    return axiosClient.post(`/YeuCau/${id}/accept`, `"${staffId}"`).then(res => res.data);
-  },
 
-  // UC-23: Cập nhật trạng thái (Đang đến, Đang xử lý)
-  updateStatus: async (id: string | number, status: string) => {
-    if (USE_MOCK) {
-      await delay(800);
-      if (mockActive) mockActive.trangThaiHienTai = status;
-      return mockActive;
-    }
-    return axiosClient.put(`/YeuCau/${id}/status`, `"${status}"`).then(res => res.data);
-  },
+  // Lấy idNhanVien từ idTaiKhoan (gọi sau khi login)
+  getStaffByTaiKhoan: (idTaiKhoan: number) =>
+    axiosClient.get<any, { idNhanVien: number; hoTen: string; trangThaiNhanViec: boolean; diemTb: number }>(
+      `/NhanVien/by-taikhoan/${idTaiKhoan}`
+    ),
 
-  // UC-24: Hoàn thành cứu hộ
-  complete: async (id: string | number, finalCost: number) => {
-    if (USE_MOCK) {
-      await delay(1000);
-      if (mockActive) {
-        mockHistory = [{ id: mockActive.id, tenKhachHang: mockActive.tenKhachHang, diaChi: mockActive.diaChi, chiPhiThucTe: finalCost }, ...mockHistory];
-        mockActive = null;
-      }
-      return { success: true };
-    }
-    return axiosClient.post(`/YeuCau/${id}/complete`, finalCost).then(res => res.data);
-  },
+  // UC-21: Đơn chờ phù hợp với nhân viên
+  getPending: (staffId: number): Promise<YeuCauItem[]> =>
+    axiosClient.get('/YeuCau/pending', { params: { staffId } }),
 
-  // UC-25: Nhắn tin khách hàng (Chat)
-  getMessages: async (requestId: string) => {
-    if (USE_MOCK) return [];
-    return axiosClient.get(`/Chat/${requestId}`).then(res => res.data);
-  },
-  
-  sendMessage: async (requestId: string, message: string) => {
-    if (USE_MOCK) return { success: true };
-    return axiosClient.post(`/Chat/${requestId}/send`, { message }).then(res => res.data);
-  },
+  // Đơn đang xử lý (active task)
+  getActive: (staffId: number): Promise<YeuCauItem | null> =>
+    axiosClient.get(`/YeuCau/active-task/${staffId}`),
 
-  // UC-26: Xem lịch sử cứu hộ
-  getHistory: async (staffId: string) => {
-    if (USE_MOCK) { await delay(500); return mockHistory; }
-    return axiosClient.get(`/NhanVien/${staffId}/history`).then(res => res.data);
-  },
+  // Chi tiết yêu cầu
+  getDetail: (id: number, staffId: number): Promise<YeuCauItem> =>
+    axiosClient.get(`/YeuCau/${id}/detail`, { params: { staffId } }),
 
-  // UC-27 & UC-28: Lấy và Cập nhật Hồ sơ cá nhân & Dịch vụ
-  getProfile: async (staffId: string) => {
-    if (USE_MOCK) { await delay(500); return mockProfile; }
-    return axiosClient.get(`/NhanVien/${staffId}/profile`).then(res => res.data);
-  },
-  
-  updateProfile: async (staffId: string, profileData: any) => {
-    if (USE_MOCK) {
-      await delay(800);
-      mockProfile = { ...mockProfile, ...profileData };
-      return mockProfile;
-    }
-    return axiosClient.put(`/NhanVien/${staffId}/profile`, profileData).then(res => res.data);
-  },
-  
-  updateServices: async (staffId: string, services: any) => {
-    if (USE_MOCK) {
-      await delay(500);
-      mockProfile.services = services;
-      return mockProfile;
-    }
-    return axiosClient.put(`/NhanVien/${staffId}/services`, services).then(res => res.data);
-  },
+  // UC-21+22: Nhận đơn
+  accept: (id: number, idNhanVien: number) =>
+    axiosClient.post<any, { message: string }>(`/YeuCau/${id}/accept`, { idNhanVien }),
+
+  // UC-23: Cập nhật sub-status
+  updateStatus: (id: number, idNhanVien: number, trangThai: SubStatus, ghiChu?: string) =>
+    axiosClient.put<any, { message: string; trangThai: string }>(`/YeuCau/${id}/status`, {
+      idNhanVien, trangThai, ghiChu
+    }),
+
+  // UC-24: Hoàn thành
+  complete: (id: number, idNhanVien: number, chiPhiThucTe: number, ghiChu?: string) =>
+    axiosClient.post<any, { message: string; chiPhiThucTe: number; ngayHoanThanh: string }>(
+      `/YeuCau/${id}/complete`, { idNhanVien, chiPhiThucTe, ghiChu }
+    ),
+
+  // UC-25: Tin nhắn
+  getMessages: (requestId: number, idTaiKhoan: number): Promise<TinNhanItem[]> =>
+    axiosClient.get(`/Chat/${requestId}`, { params: { idTaiKhoan } }),
+
+  sendMessage: (requestId: number, idTaiKhoanGui: number, message: string, fileUrl?: string): Promise<TinNhanItem> =>
+    axiosClient.post(`/Chat/${requestId}/send`, { idTaiKhoanGui, message, fileUrl }),
+
+  // UC-26: Lịch cứu hộ
+  getHistory: (staffId: number, thang?: number, nam?: number) =>
+    axiosClient.get<any, { lichCuuHo: LichCuuHoItem[]; thongKe: ThongKe; thang: number; nam: number }>(
+      `/NhanVien/${staffId}/history`, { params: { thang, nam } }
+    ),
+
+  // UC-27: Profile
+  getProfile: (staffId: number): Promise<NhanVienProfile> =>
+    axiosClient.get(`/NhanVien/${staffId}/profile`),
+
+  updateProfile: (staffId: number, data: Partial<{
+    hoTen: string; soDienThoai: string; ngaySinh: string;
+    avatar: string; moTa: string; trangThaiNhanViec: boolean;
+  }>) =>
+    axiosClient.put<any, { message: string }>(`/NhanVien/${staffId}/profile`, data),
+
+  // UC-28: Dịch vụ
+  getServices: (staffId: number) =>
+    axiosClient.get<any, { tatCaDichVu: DichVuOption[]; daDangKy: number[] }>(
+      `/NhanVien/${staffId}/services`
+    ),
+
+  updateServices: (staffId: number, services: number[]) =>
+    axiosClient.put<any, { message: string; canhBao?: string }>(
+      `/NhanVien/${staffId}/services`, { services }
+    ),
 };
