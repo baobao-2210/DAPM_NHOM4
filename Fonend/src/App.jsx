@@ -6,11 +6,12 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 // ── Staff / Nhân viên cứu hộ ──────────────────────────────────────────────────
 import StaffDashboard     from './pages/staff/Dashboard';
-import StaffRequestDetail from './pages/staff/RequestDetail'; // UC-22/23/24 ← MỚI
+import StaffRequestDetail from './pages/staff/RequestDetail';
 import StaffChat          from './pages/staff/Chat';
 import StaffHistory       from './pages/staff/History';
 import StaffProfile       from './pages/staff/Profile';
-import StaffServices      from './pages/staff/Services';       // UC-28 ← MỚI
+import StaffServices      from './pages/staff/Services';
+import StaffNotifications from './pages/staff/Notifications';
 
 // Layouts
 import DashboardLayout from './layouts/DashboardLayout';
@@ -109,7 +110,8 @@ function App() {
                 {/* UC-22/23/24: Chi tiết + cập nhật trạng thái + hoàn thành */}
                 <Route path="yeucau/:id" element={<StaffRequestDetail />} />
 
-                {/* UC-25: Chat với khách hàng (có chatId) */}
+                {/* UC-25: Chat với khách hàng & Inbox */}
+                <Route path="messages" element={<StaffChat />} />
                 <Route path="chat/:id" element={<StaffChat />} />
 
                 {/* UC-26: Lịch cứu hộ theo tháng */}
@@ -120,6 +122,7 @@ function App() {
 
                 {/* UC-28: Cập nhật dịch vụ cung cấp */}
                 <Route path="services" element={<StaffServices />} />
+                <Route path="notifications" element={<StaffNotifications />} />
 
                 <Route path="*" element={<div>Staff Page Under Development</div>} />
               </Route>

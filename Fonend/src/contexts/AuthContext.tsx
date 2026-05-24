@@ -73,22 +73,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await new Promise(resolve => setTimeout(resolve, 800));
 
     let mockUser: User | null = null;
-
-    // =================================================================
-    // 1. GIỮ NGUYÊN HOÀN TOÀN NHƯ CŨ CHO ADMIN
-    // =================================================================
     if (emailOrPhone === 'admin' && password === 'admin123') {
       mockUser = { id: 'admin-1', email: 'admin@rescue.vn', role: 'admin' };
     } 
-    // =================================================================
-    // 2. GIỮ NGUYÊN HOÀN TOÀN NHƯ CŨ CHO CUSTOMER
-    // =================================================================
     else if (emailOrPhone === 'customer' && password === 'customer123') {
       mockUser = { id: 'cust-1', email: 'customer@test.com', role: 'customer' };
     }
-    // =================================================================
-    // 3. CHỈ SỬA RIÊNG CHO STAFF (Tạo mock token nhưng chứa ID database thật)
-    // =================================================================
     else if (emailOrPhone === 'staff1' && password === 'staff123') {
       // ID '2' để gọi xuống Backend C# lấy dữ liệu. Role 'staff' để Router chuyển đúng trang.
       mockUser = { id: '2', email: 'staff1@rescue.vn', role: 'staff' }; 

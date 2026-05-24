@@ -104,7 +104,9 @@ namespace backend.Controllers
                     .ThenInclude(dv => dv.IdDanhMucNavigation)
                 .Include(y => y.IdPhuongXaNavigation)
                     .ThenInclude(px => px.IdTinhThanhNavigation)
-                .Where(y => y.IdNhanVien == staffId && y.TrangThaiHienTai == "DangXuLy")
+                .Where(x => x.IdNhanVien == staffId &&
+                        x.TrangThaiHienTai != "HoanThanh" &&
+                        x.TrangThaiHienTai != "DaHuy")
                 .OrderByDescending(y => y.NgayTao)
                 .FirstOrDefaultAsync();
 
