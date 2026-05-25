@@ -20,7 +20,8 @@ import HomePage from './pages/guest/HomePage';
 import ServiceListPage from './pages/guest/ServiceListPage';
 import ServiceDetailPage from './pages/guest/ServiceDetailPage';
 import ForgotPasswordPage from './pages/guest/ForgotPasswordPage';
-import Auth from './pages/Customer/Auth';
+import LoginPage from './pages/guest/LoginPage';
+import RegisterPage from './pages/guest/RegisterPage';
 
 // Staff pages
 import StaffDashboard from './pages/staff/Dashboard';
@@ -47,16 +48,14 @@ export default function App() {
       <BrowserRouter>
         <Toaster position="top-right" />
         <Routes>
-          {/* Auth routes */}
-          <Route path="/login" element={<Auth />} />
-          <Route path="/register" element={<Auth initialIsLogin={false} />} />
-
-          {/* Guest routes */}
+          {/* Guest routes (includes auth pages with shared header/footer) */}
           <Route element={<GuestLayout />}>
             <Route index element={<HomePage />} />
             <Route path="services" element={<ServiceListPage />} />
             <Route path="services/:id" element={<ServiceDetailPage />} />
             <Route path="forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="login" element={<LoginPage />} />
+            <Route path="register" element={<RegisterPage />} />
           </Route>
 
           {/* Admin routes */}

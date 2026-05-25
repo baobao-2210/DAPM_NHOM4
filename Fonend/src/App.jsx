@@ -13,7 +13,16 @@ import StaffProfile from './pages/staff/Profile';
 // Layouts
 import DashboardLayout from './layouts/DashboardLayout';
 import StaffLayout from './layouts/StaffLayout';
+import GuestLayout from './layouts/GuestLayout';
 import Navbar from './components/Navbar';
+
+// Guest Pages
+import HomePage from './pages/guest/HomePage';
+import ServiceListPage from './pages/guest/ServiceListPage';
+import ServiceDetailPage from './pages/guest/ServiceDetailPage';
+import ForgotPasswordPage from './pages/guest/ForgotPasswordPage';
+import LoginPage from './pages/guest/LoginPage';
+import RegisterPage from './pages/guest/RegisterPage';
 
 // Customer Pages
 import Auth from './pages/Customer/Auth';
@@ -59,10 +68,17 @@ function App() {
       <Toaster position="top-right" />
       <Router>
         <Routes>
-          {/* Auth Routes */}
-          <Route path="/login" element={<Auth />} />
-          <Route path="/register" element={<Auth initialIsLogin={false} />} />
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          {/* Trang chủ — tự render header/footer theo style RescueGuard */}
+          <Route index element={<HomePage />} />
+
+          {/* Guest sub-pages — có GuestHeader/GuestFooter */}
+          <Route element={<GuestLayout />}>
+            <Route path="services" element={<ServiceListPage />} />
+            <Route path="services/:id" element={<ServiceDetailPage />} />
+            <Route path="login" element={<LoginPage />} />
+            <Route path="register" element={<RegisterPage />} />
+            <Route path="forgot-password" element={<ForgotPasswordPage />} />
+          </Route>
 
           {/* Customer Routes */}
           <Route path="/detail" element={<CustomerLayout><ServiceDetail /></CustomerLayout>} />
