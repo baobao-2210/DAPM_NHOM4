@@ -1,135 +1,164 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider } from './contexts/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
-
-// Staff Pages
-import StaffDashboard from './pages/staff/Dashboard';
-import StaffChat from './pages/staff/Chat';
-import StaffHistory from './pages/staff/History';
-import StaffProfile from './pages/staff/Profile';
 
 // Layouts
-import DashboardLayout from './layouts/DashboardLayout';
+import MainLayout from './layouts/MainLayout';
+import AdminLayout from './layouts/AdminLayout';
 import StaffLayout from './layouts/StaffLayout';
-import GuestLayout from './layouts/GuestLayout';
-import Navbar from './components/Navbar';
+import CustomerLayout from './layouts/CustomerLayout';
 
-// Guest Pages
-import HomePage from './pages/guest/HomePage';
-import ServiceListPage from './pages/guest/ServiceListPage';
-import ServiceDetailPage from './pages/guest/ServiceDetailPage';
-import ForgotPasswordPage from './pages/guest/ForgotPasswordPage';
-import LoginPage from './pages/guest/LoginPage';
-import RegisterPage from './pages/guest/RegisterPage';
+// Auth
+import { AuthProvider } from './auth/AuthContext';
+import ProtectedRoute from './auth/ProtectedRoute';
+import RoleRoute from './auth/RoleRoute';
 
-// Customer Pages
-import Auth from './pages/Customer/Auth';
-import ServiceDetail from './pages/Customer/ServiceDetail';
-import RescueRequest from './pages/Customer/RescueRequest';
-import RescueHistory from './pages/Customer/RescueHistory';
-import RescueTracking from './pages/Customer/RescueTracking';
-import CancelRequest from './pages/Customer/CancelRequest';
-import RescueComplete from './pages/Customer/RescueComplete';
-import CostEstimation from './pages/Customer/CostEstimation';
-import UserProfile from './pages/Customer/UserProfile';
-import Support from './pages/Customer/Support';
-import Feedback from './pages/Customer/Feedback';
+// Guest pages
+import Home from './pages/guest/Home';
+import Services from './pages/guest/Services';
+import About from './pages/guest/About';
+import Contact from './pages/guest/Contact';
 
-// Admin Pages
-import AdminUsersPage from './pages/admin/AdminUsersPage';
-import DashboardPage from './pages/admin/DashboardPage';
-import RequestsPage from './pages/admin/RequestsPage';
-import StaffPage from './pages/admin/StaffPage';
-import VehiclesPage from './pages/admin/VehiclesPage';
-import ServicesPage from './pages/admin/ServicesPage';
-import MapPage from './pages/admin/MapPage';
-import NotificationsPage from './pages/admin/NotificationsPage';
-import ComplaintsPage from './pages/admin/ComplaintsPage';
-import ReportPage from './pages/admin/ReportPage';
-import SystemSettingsPage from './pages/admin/SystemSettingsPage';
+// Auth pages
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
 
-const queryClient = new QueryClient();
+// Customer pages
+import CustomerDashboard from './pages/customer/CustomerDashboard';
+import Profile from './pages/customer/Profile';
+import MyVehicles from './pages/customer/MyVehicles';
+import CreateRescueRequest from './pages/customer/CreateRescueRequest';
+import RescueRequestHistory from './pages/customer/RescueRequestHistory';
+import RescueRequestDetail from './pages/customer/RescueRequestDetail';
+import Reviews from './pages/customer/Reviews';
+import Payments from './pages/customer/Payments';
+import Complaints from './pages/customer/Complaints';
+import LiveTracking from './pages/customer/LiveTracking';
 
-function CustomerLayout({ children }) {
-  return (
-    <>
-      <Navbar />
-      {children}
-    </>
-  );
-}
+// Staff pages
+import StaffDashboard from './pages/staff/StaffDashboard';
+import AssignedRequests from './pages/staff/AssignedRequests';
+import UpdateRequestStatus from './pages/staff/UpdateRequestStatus';
+import StaffProfile from './pages/staff/StaffProfile';
+import StaffReviews from './pages/staff/StaffReviews';
+
+// Admin pages
+import AdminDashboard from './pages/admin/AdminDashboard';
+import ManageCustomers from './pages/admin/ManageCustomers';
+import ManageStaff from './pages/admin/ManageStaff';
+import ManageServices from './pages/admin/ManageServices';
+import ManageRequests from './pages/admin/ManageRequests';
+import ManageComplaints from './pages/admin/ManageComplaints';
+import ManageAreas from './pages/admin/ManageAreas';
+import StaffSpecialization from './pages/admin/StaffSpecialization';
+
+// Shared pages
+import Notifications from './pages/shared/Notifications';
+import SharedChat from './pages/shared/SharedChat';
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-      <Toaster position="top-right" />
-      <Router>
-        <Routes>
-          {/* Trang chủ — tự render header/footer theo style RescueGuard */}
-          <Route index element={<HomePage />} />
+    <AuthProvider>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: '#1e293b',
+            color: '#f1f5f9',
+            border: '1px solid #334155',
+            borderRadius: '12px',
+          },
+          success: {
+            iconTheme: { primary: '#10b981', secondary: '#fff' },
+          },
+          error: {
+            iconTheme: { primary: '#ef4444', secondary: '#fff' },
+          },
+        }}
+      />
 
-          {/* Guest sub-pages — có GuestHeader/GuestFooter */}
-          <Route element={<GuestLayout />}>
-            <Route path="services" element={<ServiceListPage />} />
-            <Route path="services/:id" element={<ServiceDetailPage />} />
-            <Route path="login" element={<LoginPage />} />
-            <Route path="register" element={<RegisterPage />} />
-            <Route path="forgot-password" element={<ForgotPasswordPage />} />
-          </Route>
+      <Routes>
+        {/* === PUBLIC ROUTES (MainLayout) === */}
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/services" element={<Services />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+        </Route>
 
-          {/* Customer Routes */}
-          <Route path="/detail" element={<CustomerLayout><ServiceDetail /></CustomerLayout>} />
-          <Route path="/request" element={<CustomerLayout><RescueRequest /></CustomerLayout>} />
-          <Route path="/history" element={<CustomerLayout><RescueHistory /></CustomerLayout>} />
-          <Route path="/tracking" element={<CustomerLayout><RescueTracking /></CustomerLayout>} />
-          <Route path="/cancel" element={<CustomerLayout><CancelRequest /></CustomerLayout>} />
-          <Route path="/complete" element={<CustomerLayout><RescueComplete /></CustomerLayout>} />
-          <Route path="/estimation" element={<CustomerLayout><CostEstimation /></CustomerLayout>} />
-          <Route path="/support" element={<CustomerLayout><Support /></CustomerLayout>} />
-          <Route path="/feedback" element={<CustomerLayout><Feedback /></CustomerLayout>} />
-          <Route path="/profile" element={<CustomerLayout><UserProfile /></CustomerLayout>} />
+        {/* === CUSTOMER ROUTES === */}
+        <Route
+          path="/customer"
+          element={
+            <ProtectedRoute>
+              <RoleRoute allowedRoles={['customer']}>
+                <CustomerLayout />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<CustomerDashboard />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="vehicles" element={<MyVehicles />} />
+          <Route path="rescue-requests" element={<RescueRequestHistory />} />
+          <Route path="rescue-requests/create" element={<CreateRescueRequest />} />
+          <Route path="rescue-requests/:id" element={<RescueRequestDetail />} />
+          <Route path="notifications" element={<Notifications />} />
+          <Route path="reviews" element={<Reviews />} />
+          <Route path="payments" element={<Payments />} />
+          <Route path="complaints" element={<Complaints />} />
+          <Route path="tracking/:requestId" element={<LiveTracking />} />
+          <Route path="chat/:requestId" element={<SharedChat />} />
+        </Route>
 
-          {/* Admin Routes */}
-          <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-            <Route path="/admin" element={<DashboardLayout />}>
-              <Route index element={<Navigate to="/admin/dashboard" replace />} />
-              <Route path="dashboard" element={<DashboardPage />} />
-              <Route path="users" element={<AdminUsersPage />} />
-              <Route path="requests" element={<RequestsPage />} />
-              <Route path="staff" element={<StaffPage />} />
-              <Route path="vehicles" element={<VehiclesPage />} />
-              <Route path="services" element={<ServicesPage />} />
-              <Route path="map" element={<MapPage />} />
-              <Route path="notifications" element={<NotificationsPage />} />
-              <Route path="complaints" element={<ComplaintsPage />} />
-              <Route path="reports" element={<ReportPage />} />
-              <Route path="system-settings" element={<SystemSettingsPage />} />
-              <Route path="*" element={<div>Admin Page Under Development</div>} />
-            </Route>
-          </Route>
+        {/* === STAFF ROUTES === */}
+        <Route
+          path="/staff"
+          element={
+            <ProtectedRoute>
+              <RoleRoute allowedRoles={['staff']}>
+                <StaffLayout />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<StaffDashboard />} />
+          <Route path="requests" element={<AssignedRequests />} />
+          <Route path="requests/:id" element={<UpdateRequestStatus />} />
+          <Route path="notifications" element={<Notifications />} />
+          <Route path="profile" element={<StaffProfile />} />
+          <Route path="reviews" element={<StaffReviews />} />
+          <Route path="chat/:requestId" element={<SharedChat />} />
+        </Route>
 
-          {/* Partner & Admin Login Route */}
-          <Route path="/partner/login" element={<Navigate to="/login" replace />} />
+        {/* === ADMIN ROUTES === */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <RoleRoute allowedRoles={['admin']}>
+                <AdminLayout />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<AdminDashboard />} />
+          <Route path="customers" element={<ManageCustomers />} />
+          <Route path="staff" element={<ManageStaff />} />
+          <Route path="staff/:id" element={<StaffSpecialization />} />
+          <Route path="services" element={<ManageServices />} />
+          <Route path="requests" element={<ManageRequests />} />
+          <Route path="notifications" element={<Notifications />} />
+          <Route path="complaints" element={<ManageComplaints />} />
+          <Route path="areas" element={<ManageAreas />} />
+        </Route>
 
-          {/* Partner Routes */}
-          <Route element={<ProtectedRoute allowedRoles={['staff']} />}>
-            <Route path="/partner" element={<StaffLayout />}>
-              <Route index element={<StaffDashboard />} />
-              <Route path="chat" element={<StaffChat />} />
-              <Route path="history" element={<StaffHistory />} />
-              <Route path="profile" element={<StaffProfile />} />
-              <Route path="*" element={<div>Staff Page Under Development</div>} />
-            </Route>
-          </Route>
-        </Routes>
-      </Router>
-      </AuthProvider>
-    </QueryClientProvider>
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </AuthProvider>
   );
 }
-
 
 export default App;
