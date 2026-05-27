@@ -33,6 +33,19 @@ import StaffServices      from './pages/staff/Services';
 import StaffPrivateRoute  from './components/StaffPrivateRoute';
 import StaffNotifications from './pages/staff/Notifications';
 
+// ── Customer ──────────────────────────────────────────────────
+import CustomerLayout from './layouts/CustomerLayout';
+import CustomerDashboard from './pages/Customer/CustomerDashboard';
+import CustomerProfile from './pages/Customer/Profile';
+import CustomerVehicles from './pages/Customer/MyVehicles';
+import CustomerRescueHistory from './pages/Customer/RescueRequestHistory';
+import CustomerCreateRescue from './pages/Customer/CreateRescueRequest';
+import CustomerRescueDetail from './pages/Customer/RescueRequestDetail';
+import CustomerLiveTracking from './pages/Customer/LiveTracking';
+import CustomerPayments from './pages/Customer/Payments';
+import CustomerReviews from './pages/Customer/Reviews';
+import CustomerComplaints from './pages/Customer/Complaints';
+
 const queryClient = new QueryClient();
 
 function PlaceholderPage({ title }: { title: string }) {
@@ -51,16 +64,7 @@ export default function App() {
       <BrowserRouter>
         <Toaster position="top-right" />
         <Routes>
-<<<<<<< HEAD
           {/* Guest routes (includes auth pages with shared header/footer) */}
-=======
-
-          {/* ── Auth ── */}
-          <Route path="/login"    element={<Auth />} />
-          <Route path="/register" element={<Auth initialIsLogin={false} />} />
-
-          {/* ── Guest ── */}
->>>>>>> admin-login
           <Route element={<GuestLayout />}>
             <Route index element={<HomePage />} />
             <Route path="services"     element={<ServiceListPage />} />
@@ -111,6 +115,20 @@ export default function App() {
               <Route path="services" element={<StaffServices />} />
               <Route path="notifications" element={<StaffNotifications />} />
             </Route>
+          </Route>
+
+          {/* ── Customer ── */}
+          <Route path="/customer" element={<CustomerLayout />}>
+            <Route index element={<CustomerDashboard />} />
+            <Route path="profile" element={<CustomerProfile />} />
+            <Route path="vehicles" element={<CustomerVehicles />} />
+            <Route path="rescue-requests" element={<CustomerRescueHistory />} />
+            <Route path="rescue-requests/create" element={<CustomerCreateRescue />} />
+            <Route path="rescue-requests/:id" element={<CustomerRescueDetail />} />
+            <Route path="rescue-requests/:id/tracking" element={<CustomerLiveTracking />} />
+            <Route path="payments" element={<CustomerPayments />} />
+            <Route path="reviews" element={<CustomerReviews />} />
+            <Route path="complaints" element={<CustomerComplaints />} />
           </Route>
 
           {/* Fallback */}

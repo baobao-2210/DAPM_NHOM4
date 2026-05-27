@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axiosClient from '../../api/axiosClient';
+import { customerApi } from '../../api/customerApi';
 import { ClipboardList, ChevronRight, Plus, Truck } from 'lucide-react';
 import PageHeader from '../../components/ui/PageHeader';
 import Card from '../../components/ui/Card';
@@ -11,11 +11,10 @@ import EmptyState from '../../components/ui/EmptyState';
 import Skeleton from '../../components/ui/Skeleton';
 
 const statusBadge = {
-  Pending: { label: 'Chờ xử lý', variant: 'warning' },
-  Assigned: { label: 'Đã phân công', variant: 'primary' },
-  OnGoing: { label: 'Đang xử lý', variant: 'info' },
-  Completed: { label: 'Hoàn thành', variant: 'success' },
-  Cancelled: { label: 'Đã hủy', variant: 'danger' },
+  TiepNhan: { label: 'Tiếp nhận', variant: 'warning' },
+  DangXuLy: { label: 'Đang xử lý', variant: 'info' },
+  HoanThanh: { label: 'Hoàn thành', variant: 'success' },
+  DaHuy: { label: 'Đã hủy', variant: 'danger' },
 };
 
 const RescueRequestHistory = () => {
@@ -25,12 +24,12 @@ const RescueRequestHistory = () => {
   const [filter, setFilter] = useState('all');
 
   useEffect(() => {
-    axiosClient.get('/customer/rescue-requests')
+    customerApi.getRequests()
       .then(res => setRequests(res.data?.data || res.data || []))
       .catch(() => setRequests([
-        { _id: 'REQ-DEMO-1', service: { name: 'Kéo xe khẩn cấp' }, status: 'OnGoing', address: 'Cầu Rồng, Đà Nẵng', createdAt: new Date().toISOString() },
-        { _id: 'REQ-DEMO-2', service: { name: 'Thay lốp dự phòng' }, status: 'Completed', address: 'Bãi biển Mỹ Khê', createdAt: new Date(Date.now() - 86400000).toISOString() },
-        { _id: 'REQ-DEMO-3', service: { name: 'Kích bình ắc quy' }, status: 'Pending', address: 'Chợ Hàn, Đà Nẵng', createdAt: new Date(Date.now() - 3600000).toISOString() },
+        { _id: 'REQ-DEMO-1', service: { name: 'Kéo xe khẩn cấp' }, status: 'DangXuLy', address: 'Cầu Rồng, Đà Nẵng', createdAt: new Date().toISOString() },
+        { _id: 'REQ-DEMO-2', service: { name: 'Thay lốp dự phòng' }, status: 'HoanThanh', address: 'Bãi biển Mỹ Khê', createdAt: new Date(Date.now() - 86400000).toISOString() },
+        { _id: 'REQ-DEMO-3', service: { name: 'Kích bình ắc quy' }, status: 'TiepNhan', address: 'Chợ Hàn, Đà Nẵng', createdAt: new Date(Date.now() - 3600000).toISOString() },
       ]))
       .finally(() => setLoading(false));
   }, []);
@@ -44,11 +43,10 @@ const RescueRequestHistory = () => {
 
   const tabs = [
     { value: 'all', label: 'Tất cả', count: requests.length },
-    { value: 'Pending', label: 'Chờ xử lý', count: requests.filter(r => r.status === 'Pending').length },
-    { value: 'Assigned', label: 'Đã phân công', count: requests.filter(r => r.status === 'Assigned').length },
-    { value: 'OnGoing', label: 'Đang xử lý', count: requests.filter(r => r.status === 'OnGoing').length },
-    { value: 'Completed', label: 'Hoàn thành', count: requests.filter(r => r.status === 'Completed').length },
-    { value: 'Cancelled', label: 'Đã hủy', count: requests.filter(r => r.status === 'Cancelled').length },
+    { value: 'TiepNhan', label: 'Tiếp nhận', count: requests.filter(r => r.status === 'TiepNhan').length },
+    { value: 'DangXuLy', label: 'Đang xử lý', count: requests.filter(r => r.status === 'DangXuLy').length },
+    { value: 'HoanThanh', label: 'Hoàn thành', count: requests.filter(r => r.status === 'HoanThanh').length },
+    { value: 'DaHuy', label: 'Đã hủy', count: requests.filter(r => r.status === 'DaHuy').length },
   ];
 
   return (
@@ -91,7 +89,7 @@ const RescueRequestHistory = () => {
         <Card padding={false}>
           <div className="divide-y divide-[#F1F5F9]">
             {filtered.map(req => {
-              const cfg = statusBadge[req.status] || statusBadge.Pending;
+              const cfg = statusBadge[req.status] || statusBadge.TiepNhan;
               return (
                 <Link
                   key={req._id}

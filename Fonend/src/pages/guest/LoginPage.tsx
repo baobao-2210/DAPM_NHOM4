@@ -1,44 +1,38 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { login } from '../../services/guestService';
+import { useAuth } from '../../auth/AuthContext';
+import toast from 'react-hot-toast';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const [emailOrPhone, setEmailOrPhone] = useState('');
+  const { login } = useAuth();
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError('');
 
     // Validate
-    if (!emailOrPhone.trim()) {
-      setError('Vui lòng nhập email hoặc số điện thoại');
+    if (!email.trim()) {
+      toast.error('Vui lòng nhập email');
       return;
     }
     if (!password.trim()) {
-      setError('Vui lòng nhập mật khẩu');
+      toast.error('Vui lòng nhập mật khẩu');
       return;
     }
 
     setIsLoading(true);
     try {
-      const result = await login({ emailOrPhone, password });
-      if (result.success) {
-        // Lưu thông tin user vào localStorage
-        localStorage.setItem('user', JSON.stringify({
-          emailOrPhone,
-          loginTime: new Date().toISOString(),
-        }));
-        navigate('/');
-      } else {
-        setError(result.message || 'Đăng nhập thất bại');
-      }
-    } catch (err) {
-      setError('Lỗi kết nối. Vui lòng thử lại.');
+      const user = await login({ email, password });
+      toast.success('Đăng nhập thành công');
+      if (user.role === 'admin') navigate('/admin');
+      else if (user.role === 'staff') navigate('/partner');
+      else navigate('/');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Đăng nhập thất bại');
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -92,19 +86,6 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {error && (
-            <div style={{
-              padding: '12px 16px',
-              borderRadius: 'var(--radius-md)',
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              color: '#ef4444',
-              fontSize: 14,
-              fontWeight: 500,
-            }}>
-              {error}
-            </div>
-          )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label style={{
@@ -112,13 +93,13 @@ export default function LoginPage() {
               fontWeight: 600,
               color: 'var(--text-primary)',
             }}>
-              Email hoặc số điện thoại
+              Email
             </label>
             <input
-              type="text"
-              placeholder="Nhập email hoặc số điện thoại"
-              value={emailOrPhone}
-              onChange={(e) => setEmailOrPhone(e.target.value)}
+              type="email"
+              placeholder="Nhập email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               style={{
                 padding: '12px 14px',
                 borderRadius: 'var(--radius-md)',

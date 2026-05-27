@@ -25,7 +25,7 @@ const Services = () => {
   const { user } = useAuth();
 
   useEffect(() => {
-    axiosClient.get('/admin/services')
+    axiosClient.get('/DichVu')
       .then(res => setServices(res.data?.data || res.data || mockServices))
       .catch(() => setServices(mockServices))
       .finally(() => setLoading(false));

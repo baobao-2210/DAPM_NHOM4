@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react';
-import { registerCustomer } from '../../services/guestService';
+import { useAuth } from '../../auth/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 const initialForm = {
   fullName: '',
@@ -11,9 +13,10 @@ const initialForm = {
 };
 
 export default function RegisterPage() {
+  const navigate = useNavigate();
+  const { register } = useAuth();
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [message, setMessage] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
 
   function validate() {
@@ -33,14 +36,22 @@ export default function RegisterPage() {
     event.preventDefault();
     const nextErrors = validate();
     setErrors(nextErrors);
-    setMessage('');
     if (Object.keys(nextErrors).length > 0) return;
     setSubmitting(true);
-    const result = await registerCustomer(form);
-    setSubmitting(false);
-    setMessage(result.message);
-    if (result.success) {
+    try {
+      await register({
+        email: form.email,
+        password: form.password,
+        name: form.fullName,
+        phone: form.phone,
+      });
+      toast.success('Đăng ký thành công! Đang chuyển hướng...');
       setForm(initialForm);
+      setTimeout(() => navigate('/login'), 1500);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Đăng ký thất bại');
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -128,7 +139,6 @@ export default function RegisterPage() {
           <button className="btn btn-primary btn-lg" type="submit" disabled={submitting}>
             {submitting ? 'Đang gửi...' : 'Đăng ký'}
           </button>
-          {message && <div style={{ color: 'var(--success)', fontSize: 14 }}>{message}</div>}
         </div>
       </form>
     </div>

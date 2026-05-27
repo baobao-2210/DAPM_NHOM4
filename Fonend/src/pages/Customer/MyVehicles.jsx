@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axiosClient from '../../api/axiosClient';
+import { customerApi } from '../../api/customerApi';
 import toast from 'react-hot-toast';
 import Modal from '../../components/Modal';
 import { Car, Plus, Edit3, Trash2 } from 'lucide-react';
@@ -25,7 +25,7 @@ const MyVehicles = () => {
   const [saving, setSaving] = useState(false);
 
   const fetch = () => {
-    axiosClient.get('/customer/vehicles')
+    customerApi.getVehicles()
       .then(res => setVehicles(res.data?.data || res.data || []))
       .catch(() => setVehicles([]))
       .finally(() => setLoading(false));
@@ -43,10 +43,10 @@ const MyVehicles = () => {
     setSaving(true);
     try {
       if (modal === 'create') {
-        await axiosClient.post('/customer/vehicles', form);
+        await customerApi.createVehicle(form);
         toast.success('Thêm xe thành công!');
       } else {
-        await axiosClient.put(`/customer/vehicles/${selected._id}`, form);
+        await customerApi.updateVehicle(selected._id, form);
         toast.success('Cập nhật xe thành công!');
       }
       closeModal();
@@ -61,7 +61,7 @@ const MyVehicles = () => {
   const handleDelete = async (id) => {
     if (!confirm('Bạn chắc chắn muốn xóa xe này?')) return;
     try {
-      await axiosClient.delete(`/customer/vehicles/${id}`);
+      await customerApi.deleteVehicle(id);
       toast.success('Đã xóa xe');
       fetch();
     } catch {

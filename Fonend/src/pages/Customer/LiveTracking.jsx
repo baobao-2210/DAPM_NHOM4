@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import { ArrowLeft, Phone, MessageSquare, Navigation, MapPin } from 'lucide-react';
+import { customerApi } from '../../api/customerApi';
 
 // Custom icons
 const staffIcon = new L.Icon({
@@ -46,17 +46,31 @@ const LiveTracking = () => {
   const [staffPos, setStaffPos] = useState(initialStaffPos);
   const [eta, setEta] = useState(15);
   const [distance, setDistance] = useState(3.2);
+  const [reqDetail, setReqDetail] = useState(null);
+
+  // Fetch request data
+  useEffect(() => {
+    const fetchReq = async () => {
+      try {
+        const res = await customerApi.getRequestDetail(requestId);
+        setReqDetail(res.data?.data || res.data);
+      } catch (err) {
+        console.error('Failed to fetch request detail', err);
+      }
+    };
+    fetchReq();
+    const pollInterval = setInterval(fetchReq, 10000); // Poll every 10s
+    return () => clearInterval(pollInterval);
+  }, [requestId]);
 
   // Simulate staff moving
   useEffect(() => {
     const interval = setInterval(() => {
       setStaffPos(prev => {
-        // Move slightly towards customer
         const newLat = prev[0] + (customerPos[0] - prev[0]) * 0.05;
         const newLng = prev[1] + (customerPos[1] - prev[1]) * 0.05;
         return [newLat, newLng];
       });
-      
       setEta(prev => Math.max(1, prev - 1));
       setDistance(prev => Math.max(0.1, prev - 0.2));
     }, 5000);
@@ -125,17 +139,13 @@ const LiveTracking = () => {
           <div className="p-4">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-[#EFF6FF] border border-[#1D4ED8]/20 flex items-center justify-center text-[#1D4ED8] font-bold text-lg">
-                  N
+                <div className="w-12 h-12 rounded-full bg-[#EFF6FF] border border-[#1D4ED8]/20 flex items-center justify-center text-[#1D4ED8] font-bold text-lg uppercase">
+                  {reqDetail?.staffName?.[0] || 'N'}
                 </div>
                 <div>
-                  <h4 className="font-bold text-[#0F172A]">Nguyễn Văn A</h4>
+                  <h4 className="font-bold text-[#0F172A]">{reqDetail?.staffName || 'Đang phân công...'}</h4>
                   <div className="flex items-center gap-2 text-sm">
-                    <span className="font-semibold text-[#64748B]">59A1-12345</span>
-                    <span className="text-[#E2E8F0]">•</span>
-                    <span className="text-[#F59E0B] flex items-center">
-                      ★ 4.9
-                    </span>
+                    <span className="font-semibold text-[#64748B]">{reqDetail?.staffPhone || 'Chưa có SĐT'}</span>
                   </div>
                 </div>
               </div>
@@ -144,7 +154,7 @@ const LiveTracking = () => {
             <div className="flex items-center gap-3 mb-4 bg-[#F8FAFC] p-3 rounded-xl border border-[#F1F5F9]">
               <MapPin className="w-5 h-5 text-[#EF4444] shrink-0" />
               <p className="text-sm text-[#0F172A] font-medium line-clamp-1">
-                Cầu Rồng, Q. Hải Châu, Đà Nẵng
+                {reqDetail?.address || 'Cầu Rồng, Q. Hải Châu, Đà Nẵng'}
               </p>
             </div>
 

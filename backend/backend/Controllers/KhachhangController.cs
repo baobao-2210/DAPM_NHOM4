@@ -242,6 +242,82 @@ namespace backend.Controllers
             await _context.SaveChangesAsync();
             return Ok(new { data = new { _id = req.IdYeuCau } });
         }
+
+        // ==========================================
+        // THANH TOÁN, ĐÁNH GIÁ & KHIẾU NẠI
+        // ==========================================
+        [HttpPost("rescue-requests/{id}/pay")]
+        public async Task<IActionResult> PayRescueRequest(int id, [FromBody] PaymentDto dto)
+        {
+            var yc = await _context.YeucauCuuhos.FindAsync(id);
+            if (yc == null) return NotFound();
+
+            if (yc.TrangThaiHienTai != "HoanThanh") 
+                return BadRequest(new { message = "Chỉ thanh toán khi đơn đã hoàn thành" });
+
+            // Kiểm tra xem đã thanh toán chưa
+            bool isPaid = await _context.Thanhtoans.AnyAsync(t => t.IdYeuCau == id && t.TrangThai == "ThanhCong");
+            if (isPaid) return BadRequest(new { message = "Đơn này đã được thanh toán" });
+
+            var thanhToan = new Thanhtoan
+            {
+                IdYeuCau = id,
+                SoTien = yc.ChiPhiThucTe > 0 ? yc.ChiPhiThucTe : yc.ChiPhiDuKien,
+                PhuongThuc = dto.Method ?? "TienMat",
+                TrangThai = "ThanhCong",
+                LoaiGiaoDich = "ThanhToanCuuHo",
+                ThoiGian = DateTime.Now
+            };
+            _context.Thanhtoans.Add(thanhToan);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Thanh toán thành công" });
+        }
+
+        [HttpPost("rescue-requests/{id}/review")]
+        public async Task<IActionResult> ReviewRescueRequest(int id, [FromBody] ReviewDto dto)
+        {
+            int khId = await GetKhachHangId(GetCurrentUserId());
+            var yc = await _context.YeucauCuuhos.FindAsync(id);
+            if (yc == null) return NotFound();
+            if (yc.IdNhanVien == null) return BadRequest(new { message = "Không thể đánh giá vì chưa có nhân viên xử lý" });
+
+            bool isReviewed = await _context.Danhgia.AnyAsync(d => d.IdYeuCau == id);
+            if (isReviewed) return BadRequest(new { message = "Bạn đã đánh giá đơn này rồi" });
+
+            var danhGia = new Danhgium
+            {
+                IdYeuCau = id,
+                IdKhachHang = khId,
+                IdNhanVien = yc.IdNhanVien.Value,
+                SoSao = dto.Rating,
+                NhanXet = dto.Comment,
+                ThoiGian = DateTime.Now
+            };
+            _context.Danhgia.Add(danhGia);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Đánh giá thành công" });
+        }
+
+        [HttpPost("complaints")]
+        public async Task<IActionResult> SubmitComplaint([FromBody] ComplaintDto dto)
+        {
+            int khId = await GetKhachHangId(GetCurrentUserId());
+            var yc = await _context.YeucauCuuhos.FindAsync(dto.RequestId);
+            
+            var khieuNai = new Khieunai
+            {
+                IdKhachHang = khId,
+                IdYeuCau = dto.RequestId,
+                IdNhanVien = yc?.IdNhanVien,
+                LoaiKhieuNai = dto.Type ?? "DichVu",
+                NoiDung = dto.Reason,
+                TrangThai = "ChoXuLy",
+                ThoiGianTao = DateTime.Now
+            };
+            _context.Khieunais.Add(khieuNai);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Gửi khiếu nại thành công" });
+        }
     }
 
     public class CustomerProfileDto
@@ -266,5 +342,23 @@ namespace backend.Controllers
         public int ServiceId { get; set; }
         public string Location { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
+    }
+
+    public class PaymentDto
+    {
+        public string? Method { get; set; }
+    }
+
+    public class ReviewDto
+    {
+        public int Rating { get; set; }
+        public string? Comment { get; set; }
+    }
+
+    public class ComplaintDto
+    {
+        public int RequestId { get; set; }
+        public string? Type { get; set; }
+        public string Reason { get; set; } = string.Empty;
     }
 }
