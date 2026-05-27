@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import axiosClient from '../../api/axiosClient';
+import { adminApi } from '../../api/adminApi';
+import toast from 'react-hot-toast';
 import Loading from '../../components/Loading';
 import PageHeader from '../../components/ui/PageHeader';
 import StatCard from '../../components/ui/StatCard';
@@ -56,19 +57,12 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axiosClient.get('/admin/dashboard')
+    adminApi.getDashboardStats()
       .then(res => setStats(res.data?.data || res.data))
-      .catch(() => setStats({
-        totalCustomers: 128,
-        totalStaff: 24,
-        totalServices: 8,
-        totalRequests: 342,
-        pendingRequests: 12,
-        ongoingRequests: 8,
-        completedRequests: 318,
-        revenue: 85600000,
-        recentRequests: [],
-      }))
+      .catch((err) => {
+        console.error(err);
+        toast.error('Không thể tải dữ liệu thống kê');
+      })
       .finally(() => setLoading(false));
   }, []);
 

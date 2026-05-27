@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axiosClient from '../../api/axiosClient';
+import { adminApi } from '../../api/adminApi';
 import toast from 'react-hot-toast';
 import Modal from '../../components/Modal';
 import Loading from '../../components/Loading';
@@ -38,8 +38,8 @@ const ManageRequests = () => {
 
   const fetch = () => {
     Promise.all([
-      axiosClient.get('/admin/rescue-requests'),
-      axiosClient.get('/admin/staff'),
+      adminApi.getRequests(),
+      adminApi.getStaff(),
     ]).then(([r, s]) => {
       setRequests(r.data?.data || r.data || []);
       setStaff(s.data?.data || s.data || []);
@@ -60,7 +60,7 @@ const ManageRequests = () => {
     if (!selectedStaff) { toast.error('Chọn nhân viên'); return; }
     setAssigning(true);
     try {
-      await axiosClient.put(`/admin/rescue-requests/${assignModal._id}/assign-staff`, { staffId: selectedStaff });
+      await adminApi.assignRequest(assignModal._id, { staffId: selectedStaff });
       toast.success('Phân công nhân viên thành công!');
       setAssignModal(null);
       setSelectedStaff('');

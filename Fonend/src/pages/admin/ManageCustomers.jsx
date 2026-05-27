@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axiosClient from '../../api/axiosClient';
+import { adminApi } from '../../api/adminApi';
 import toast from 'react-hot-toast';
 import Modal from '../../components/Modal';
 import Loading from '../../components/Loading';
@@ -21,7 +21,7 @@ const ManageCustomers = () => {
   const [saving, setSaving] = useState(false);
 
   const fetch = () => {
-    axiosClient.get('/admin/customers')
+    adminApi.getCustomers()
       .then(res => setCustomers(res.data?.data || res.data || []))
       .catch(() => setCustomers([]))
       .finally(() => setLoading(false));
@@ -46,10 +46,10 @@ const ManageCustomers = () => {
     setSaving(true);
     try {
       if (modal === 'create') {
-        await axiosClient.post('/admin/customers', { ...form, role: 'customer' });
+        await adminApi.createCustomer({ ...form, role: 'customer' });
         toast.success('Thêm khách hàng thành công!');
       } else {
-        await axiosClient.put(`/admin/customers/${selected._id}`, form);
+        await adminApi.updateCustomer(selected._id, form);
         toast.success('Cập nhật thành công!');
       }
       closeModal(); fetch();
@@ -63,7 +63,7 @@ const ManageCustomers = () => {
   const handleDelete = async (id) => {
     if (!confirm('Xóa khách hàng này?')) return;
     try {
-      await axiosClient.delete(`/admin/customers/${id}`);
+      await adminApi.deleteCustomer(id);
       toast.success('Đã xóa khách hàng');
       fetch();
     } catch { toast.error('Xóa thất bại'); }

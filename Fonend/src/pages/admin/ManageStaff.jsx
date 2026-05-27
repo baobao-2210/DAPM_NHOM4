@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axiosClient from '../../api/axiosClient';
+import { adminApi } from '../../api/adminApi';
 import toast from 'react-hot-toast';
 import Modal from '../../components/Modal';
 import Loading from '../../components/Loading';
@@ -22,7 +22,7 @@ const ManageStaff = () => {
   const [saving, setSaving] = useState(false);
 
   const fetch = () => {
-    axiosClient.get('/admin/staff')
+    adminApi.getStaff()
       .then(res => setStaff(res.data?.data || res.data || []))
       .catch(() => setStaff([]))
       .finally(() => setLoading(false));
@@ -46,10 +46,10 @@ const ManageStaff = () => {
     setSaving(true);
     try {
       if (modal === 'create') {
-        await axiosClient.post('/admin/staff', { ...form, role: 'staff' });
+        await adminApi.createStaff({ ...form, role: 'staff' });
         toast.success('Thêm nhân viên thành công!');
       } else {
-        await axiosClient.put(`/admin/staff/${selected._id}`, form);
+        await adminApi.updateStaff(selected._id, form);
         toast.success('Cập nhật thành công!');
       }
       closeModal(); fetch();
@@ -63,7 +63,7 @@ const ManageStaff = () => {
   const handleDelete = async (id) => {
     if (!confirm('Xóa nhân viên này?')) return;
     try {
-      await axiosClient.delete(`/admin/staff/${id}`);
+      await adminApi.deleteStaff(id);
       toast.success('Đã xóa nhân viên');
       fetch();
     } catch { toast.error('Xóa thất bại'); }

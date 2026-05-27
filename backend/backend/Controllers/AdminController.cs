@@ -18,6 +18,55 @@ namespace backend.Controllers
         }
 
         // ==========================================
+        // DASHBOARD THỐNG KÊ
+        // ==========================================
+        [HttpGet("dashboard")]
+        public async Task<IActionResult> GetDashboard()
+        {
+            var totalCustomers = await _context.Khachhangs.CountAsync();
+            var totalStaff = await _context.NhanvienCuuhos.CountAsync();
+            var totalServices = await _context.DichvuCuuhos.CountAsync(d => d.TrangThai == "HoatDong");
+            var totalRequests = await _context.YeucauCuuhos.CountAsync();
+            
+            var pendingRequests = await _context.YeucauCuuhos.CountAsync(y => y.TrangThaiHienTai == "ChoXuLy");
+            var ongoingRequests = await _context.YeucauCuuhos.CountAsync(y => y.TrangThaiHienTai == "DangXuLy" || y.TrangThaiHienTai == "DaPhanCong");
+            var completedRequests = await _context.YeucauCuuhos.CountAsync(y => y.TrangThaiHienTai == "HoanThanh");
+
+            var revenue = await _context.Thanhtoans
+                .Where(t => t.TrangThai == "ThanhCong" || t.TrangThai == "DaThanhToan")
+                .SumAsync(t => t.SoTien) ?? 0;
+
+            var recentRequests = await _context.YeucauCuuhos
+                .Include(y => y.IdKhachHangNavigation).ThenInclude(k => k.IdTaiKhoanNavigation)
+                .Include(y => y.IdDichVuNavigation)
+                .OrderByDescending(y => y.NgayTao)
+                .Take(5)
+                .Select(y => new
+                {
+                    _id = y.IdYeuCau,
+                    customer = new { name = y.IdKhachHangNavigation.IdTaiKhoanNavigation.HoTen },
+                    service = new { name = y.IdDichVuNavigation.TenDichVu },
+                    address = y.NoiSuCo,
+                    status = y.TrangThaiHienTai == "HoanThanh" ? "Completed" : (y.TrangThaiHienTai == "ChoXuLy" ? "Pending" : "OnGoing"),
+                    createdAt = y.NgayTao
+                })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                totalCustomers,
+                totalStaff,
+                totalServices,
+                totalRequests,
+                pendingRequests,
+                ongoingRequests,
+                completedRequests,
+                revenue,
+                recentRequests
+            });
+        }
+
+        // ==========================================
         // QUẢN LÝ DỊCH VỤ
         // ==========================================
         [HttpGet("services")]
@@ -289,6 +338,116 @@ namespace backend.Controllers
 
             return Ok(new { data = requests });
         }
+
+        [HttpPut("rescue-requests/{id}/assign")]
+        public async Task<IActionResult> AssignRequest(int id, [FromBody] AssignRequestDto dto)
+        {
+            var req = await _context.YeucauCuuhos.FindAsync(id);
+            if (req == null) return NotFound(new { message = "Không tìm thấy yêu cầu" });
+
+            req.IdNhanVien = dto.StaffId;
+            req.TrangThaiHienTai = "DaPhanCong";
+
+            // Tạo thông báo cho Nhân viên
+            var staff = await _context.NhanvienCuuhos.FindAsync(dto.StaffId);
+            if (staff != null)
+            {
+                var staffNotif = new Thongbao
+                {
+                    IdTaiKhoanNhan = staff.IdTaiKhoan,
+                    TieuDe = "Phân công cứu hộ",
+                    NoiDung = $"Bạn vừa được phân công một đơn cứu hộ mới (Mã: {req.IdYeuCau}). Vui lòng kiểm tra mục Đơn được giao.",
+                    DaDoc = false,
+                    ThoiGian = DateTime.Now,
+                    Loai = "HeThong",
+                    RefType = "PhanCong"
+                };
+                _context.Thongbaos.Add(staffNotif);
+            }
+
+            // Tạo thông báo cho Khách hàng
+            var customer = await _context.Khachhangs.FindAsync(req.IdKhachHang);
+            if (customer != null)
+            {
+                var customerNotif = new Thongbao
+                {
+                    IdTaiKhoanNhan = customer.IdTaiKhoan,
+                    TieuDe = "Cập nhật đơn cứu hộ",
+                    NoiDung = $"Đơn cứu hộ của bạn (Mã: {req.IdYeuCau}) đã được phân công cho nhân viên. Hệ thống đang tiến hành xử lý.",
+                    DaDoc = false,
+                    ThoiGian = DateTime.Now,
+                    Loai = "HeThong",
+                    RefType = "CapNhatDon"
+                };
+                _context.Thongbaos.Add(customerNotif);
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Phân công nhân viên thành công" });
+        }
+
+        // ==========================================
+        // QUẢN LÝ KHU VỰC
+        // ==========================================
+        [HttpGet("areas")]
+        public async Task<IActionResult> GetAreas()
+        {
+            var areas = await _context.PhuongXas
+                .Include(p => p.IdTinhThanhNavigation)
+                .Select(p => new
+                {
+                    _id = p.IdPhuongXa,
+                    code = p.MaPhuongXa,
+                    name = p.TenPhuongXa,
+                    city = p.IdTinhThanhNavigation.TenTinh,
+                    cityId = p.IdTinhThanhNavigation.IdTinhThanh,
+                    status = "active"
+                })
+                .ToListAsync();
+            return Ok(new { data = areas });
+        }
+
+        [HttpPost("areas")]
+        public async Task<IActionResult> CreateArea([FromBody] AreaDto dto)
+        {
+            // Auto add city if not exist or fallback to 1
+            var cityId = dto.CityId > 0 ? dto.CityId : 1;
+            
+            var px = new PhuongXa
+            {
+                IdTinhThanh = cityId,
+                MaPhuongXa = dto.Code ?? "PX-NEW",
+                TenPhuongXa = dto.Name
+            };
+            _context.PhuongXas.Add(px);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Thêm khu vực thành công" });
+        }
+
+        [HttpPut("areas/{id}")]
+        public async Task<IActionResult> UpdateArea(int id, [FromBody] AreaDto dto)
+        {
+            var px = await _context.PhuongXas.FindAsync(id);
+            if (px == null) return NotFound();
+
+            if (!string.IsNullOrEmpty(dto.Code)) px.MaPhuongXa = dto.Code;
+            px.TenPhuongXa = dto.Name;
+            if (dto.CityId > 0) px.IdTinhThanh = dto.CityId;
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Cập nhật khu vực thành công" });
+        }
+
+        [HttpDelete("areas/{id}")]
+        public async Task<IActionResult> DeleteArea(int id)
+        {
+            var px = await _context.PhuongXas.FindAsync(id);
+            if (px == null) return NotFound();
+            
+            _context.PhuongXas.Remove(px);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Đã xóa khu vực" });
+        }
     }
 
     public class ServiceDto
@@ -307,5 +466,17 @@ namespace backend.Controllers
         public string Phone { get; set; } = string.Empty;
         public string? Specialization { get; set; }
         public string Role { get; set; } = string.Empty;
+    }
+
+    public class AssignRequestDto
+    {
+        public int StaffId { get; set; }
+    }
+
+    public class AreaDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? Code { get; set; }
+        public int CityId { get; set; }
     }
 }
