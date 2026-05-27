@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import SidebarStaff from '../components/SidebarStaff';
+<<<<<<< HEAD
+=======
+import NotificationBell from '../components/ui/NotificationBell';
+>>>>>>> admin-login
 import { Menu, X, ChevronRight } from 'lucide-react';
 
 const StaffLayout = () => {
@@ -75,6 +79,7 @@ const StaffLayout = () => {
               ))}
             </div>
 
+<<<<<<< HEAD
             {/* User avatar */}
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
@@ -83,6 +88,22 @@ const StaffLayout = () => {
               </div>
               <div className="w-9 h-9 rounded-full bg-[#EFF6FF] border border-[#1D4ED8]/20 flex items-center justify-center text-[#1D4ED8] font-bold text-sm">
                 {user?.name?.charAt(0).toUpperCase() || 'S'}
+=======
+            {/* Right section: Notifications & Avatar */}
+            <div className="flex items-center gap-4">
+              <NotificationBell />
+              
+              <div className="w-px h-6 bg-[#E2E8F0]"></div>
+
+              <div className="flex items-center gap-3">
+                <div className="text-right hidden sm:block">
+                  <p className="text-sm font-semibold text-[#0F172A] leading-tight">{user?.name || 'Staff'}</p>
+                  <p className="text-xs text-[#94A3B8]">{user?.specialization || 'Nhân viên cứu hộ'}</p>
+                </div>
+                <div className="w-9 h-9 rounded-full bg-[#EFF6FF] border border-[#1D4ED8]/20 flex items-center justify-center text-[#1D4ED8] font-bold text-sm">
+                  {user?.name?.charAt(0).toUpperCase() || 'S'}
+                </div>
+>>>>>>> admin-login
               </div>
             </div>
           </div>

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Đường dẫn tới Backend C# của đồng đội bạn
-export const API_BASE_URL = 'https://localhost:64616/api';
+export const API_BASE_URL = 'https://localhost:54343/api';
 
 const axiosClient = axios.create({
   baseURL: API_BASE_URL,
@@ -12,7 +12,7 @@ const axiosClient = axios.create({
 
 // Tự động đính kèm Token khi gọi API
 axiosClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
+  const token = localStorage.getItem('token');
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }

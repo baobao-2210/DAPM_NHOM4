@@ -30,6 +30,15 @@ const generateMockToken = (user: User) => {
   return `${header}.${payload}.${signature}`;
 };
 
+// Hàm hỗ trợ bóc tách dữ liệu từ JWT (Hỗ trợ khi sau này ráp API thật)
+const extractUserInfoFromToken = (decoded: any): User => {
+  return {
+    id: decoded.id || decoded.nameid || decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] || '',
+    email: decoded.email || decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] || '',
+    role: decoded.role || decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || 'staff'
+  };
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<string | null>(null);
@@ -46,13 +55,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (decoded.exp && decoded.exp * 1000 < Date.now()) {
           logout();
         } else {
+          const userInfo = extractUserInfoFromToken(decoded);
           setToken(savedToken);
-          setRole(decoded.role);
-          setUser({
-            id: decoded.id,
-            email: decoded.email,
-            role: decoded.role
-          });
+          setRole(userInfo.role);
+          setUser(userInfo);
         }
       } catch (err) {
         console.error("Lỗi giải mã token:", err);
@@ -66,15 +72,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Giả lập độ trễ mạng
     await new Promise(resolve => setTimeout(resolve, 800));
 
-    // MOCK ĐĂNG NHẬP VỚI 3 TÀI KHOẢN MẪU
     let mockUser: User | null = null;
-
     if (emailOrPhone === 'admin' && password === 'admin123') {
       mockUser = { id: 'admin-1', email: 'admin@rescue.vn', role: 'admin' };
-    } else if (emailOrPhone === 'staff' && password === 'staff123') {
-      mockUser = { id: 'staff-1', email: 'staff@rescue.vn', role: 'staff' };
-    } else if (emailOrPhone === 'customer' && password === 'customer123') {
+    } 
+    else if (emailOrPhone === 'customer' && password === 'customer123') {
       mockUser = { id: 'cust-1', email: 'customer@test.com', role: 'customer' };
+    }
+    else if (emailOrPhone === 'staff1' && password === 'staff123') {
+      // ID '2' để gọi xuống Backend C# lấy dữ liệu. Role 'staff' để Router chuyển đúng trang.
+      mockUser = { id: '2', email: 'staff1@rescue.vn', role: 'staff' }; 
     }
 
     if (mockUser) {

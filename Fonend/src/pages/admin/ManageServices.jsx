@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
+<<<<<<< HEAD
 import axiosClient from '../../api/axiosClient';
+=======
+import { adminApi } from '../../api/adminApi';
+>>>>>>> admin-login
 import toast from 'react-hot-toast';
 import Modal from '../../components/Modal';
 import Loading from '../../components/Loading';
@@ -26,7 +30,11 @@ const ManageServices = () => {
   const [saving, setSaving] = useState(false);
 
   const fetch = () => {
+<<<<<<< HEAD
     axiosClient.get('/admin/services')
+=======
+    adminApi.getServices()
+>>>>>>> admin-login
       .then(res => setServices(res.data?.data || res.data || []))
       .catch(() => setServices([]))
       .finally(() => setLoading(false));
@@ -50,10 +58,17 @@ const ManageServices = () => {
     try {
       const payload = { ...form, price: Number(form.price) || 0 };
       if (modal === 'create') {
+<<<<<<< HEAD
         await axiosClient.post('/admin/services', payload);
         toast.success('Thêm dịch vụ thành công!');
       } else {
         await axiosClient.put(`/admin/services/${selected._id}`, payload);
+=======
+        await adminApi.createService(payload);
+        toast.success('Thêm dịch vụ thành công!');
+      } else {
+        await adminApi.updateService(selected._id, payload);
+>>>>>>> admin-login
         toast.success('Cập nhật dịch vụ thành công!');
       }
       closeModal(); fetch();
@@ -67,7 +82,11 @@ const ManageServices = () => {
   const handleDelete = async (id) => {
     if (!confirm('Xóa dịch vụ này?')) return;
     try {
+<<<<<<< HEAD
       await axiosClient.delete(`/admin/services/${id}`);
+=======
+      await adminApi.deleteService(id);
+>>>>>>> admin-login
       toast.success('Đã xóa dịch vụ');
       fetch();
     } catch { toast.error('Xóa thất bại'); }

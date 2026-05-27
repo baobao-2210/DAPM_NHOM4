@@ -3,6 +3,7 @@ import axiosClient from '../api/axiosClient';
 
 const AuthContext = createContext(null);
 
+<<<<<<< HEAD
 // ============================================================
 // MOCK USERS — dùng để test UI khi backend chưa chạy
 // Xoá hoặc comment block này khi backend đã sẵn sàng
@@ -36,6 +37,9 @@ const mockLogin = (email, password) => {
   return null;
 };
 // ============================================================
+=======
+// API only
+>>>>>>> admin-login
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -65,6 +69,7 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
       return userData;
     } catch (err) {
+<<<<<<< HEAD
       // Nếu backend lỗi (không chạy / sai endpoint) → thử mock login
       const isNetworkError = !err.response; // err.response = null khi backend offline
       const isUnauthorized = err.response?.status === 401;
@@ -97,6 +102,12 @@ export const AuthProvider = ({ children }) => {
         return mock.user;
       }
 
+=======
+      const isUnauthorized = err.response?.status === 401;
+      if (isUnauthorized) {
+        throw { response: { data: { message: err.response?.data?.message || 'Email hoặc mật khẩu không đúng' } } };
+      }
+>>>>>>> admin-login
       throw err;
     }
   };
@@ -106,10 +117,13 @@ export const AuthProvider = ({ children }) => {
       const res = await axiosClient.post('/auth/register-customer', data);
       return res.data;
     } catch (err) {
+<<<<<<< HEAD
       // Backend offline → giả lập đăng ký thành công
       if (!err.response) {
         return { message: 'Đăng ký thành công (demo mode)' };
       }
+=======
+>>>>>>> admin-login
       throw err;
     }
   };

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+<<<<<<< HEAD
 import { Bell, Check, Trash2, AlertCircle, Info, CheckCircle, Clock } from 'lucide-react';
 import Badge from './Badge';
 
@@ -8,17 +9,28 @@ const mockNotifications = [
   { id: 2, title: 'Thanh toán thành công', message: 'Bạn đã thanh toán 250,000đ cho đơn cứu hộ #1234.', type: 'success', isRead: false, time: '1 giờ trước' },
   { id: 3, title: 'Cảnh báo hệ thống', message: 'Hệ thống sẽ bảo trì vào lúc 00:00 ngày mai.', type: 'warning', isRead: true, time: '1 ngày trước' },
 ];
+=======
+import { Bell, Check, AlertCircle, Info, CheckCircle, Clock, BellOff } from 'lucide-react';
+import { notificationApi } from '../../api/notificationApi';
+import { useAuth } from '../../auth/AuthContext';
+import toast from 'react-hot-toast';
+>>>>>>> admin-login
 
 const iconMap = {
   info: <Info className="w-5 h-5 text-[#3B82F6]" />,
   success: <CheckCircle className="w-5 h-5 text-[#22C55E]" />,
   warning: <AlertCircle className="w-5 h-5 text-[#F59E0B]" />,
+<<<<<<< HEAD
+=======
+  system: <Info className="w-5 h-5 text-[#3B82F6]" />
+>>>>>>> admin-login
 };
 
 const bgMap = {
   info: 'bg-[#EFF6FF]',
   success: 'bg-[#F0FDF4]',
   warning: 'bg-[#FFFBEB]',
+<<<<<<< HEAD
 };
 
 const NotificationDropdown = ({ basePath = '/customer/notifications' }) => {
@@ -29,6 +41,28 @@ const NotificationDropdown = ({ basePath = '/customer/notifications' }) => {
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   useEffect(() => {
+=======
+  system: 'bg-[#EFF6FF]'
+};
+
+const NotificationDropdown = ({ basePath = '/customer/notifications' }) => {
+  const { user } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const dropdownRef = useRef(null);
+
+  const fetchNotifications = () => {
+    if (!user?._id) return;
+    notificationApi.getByUserId(user._id)
+      .then(res => setNotifications(res.data || []))
+      .catch(err => console.error("Lỗi tải thông báo:", err));
+  };
+
+  const unreadCount = notifications.filter(n => n.trangThai === 'ChuaDoc').length;
+
+  useEffect(() => {
+    fetchNotifications();
+>>>>>>> admin-login
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
@@ -36,10 +70,34 @@ const NotificationDropdown = ({ basePath = '/customer/notifications' }) => {
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+<<<<<<< HEAD
   }, []);
 
   const markAllAsRead = () => {
     setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+=======
+  }, [user?._id]);
+
+  const markAllAsRead = async () => {
+    if(unreadCount === 0) return;
+    try {
+      await notificationApi.markAllAsRead(user._id);
+      setNotifications(prev => prev.map(n => ({ ...n, trangThai: 'DaDoc' })));
+      toast.success('Đã đánh dấu tất cả là đã đọc');
+    } catch (error) {
+      toast.error('Lỗi cập nhật thông báo');
+    }
+  };
+
+  const markAsRead = async (id, e) => {
+    if(e) e.stopPropagation();
+    try {
+      await notificationApi.markAsRead(id);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, trangThai: 'DaDoc' } : n));
+    } catch (error) {
+      toast.error('Lỗi khi cập nhật trạng thái');
+    }
+>>>>>>> admin-login
   };
 
   return (
@@ -84,6 +142,7 @@ const NotificationDropdown = ({ basePath = '/customer/notifications' }) => {
                 {notifications.map(notification => (
                   <div
                     key={notification.id}
+<<<<<<< HEAD
                     className={`p-4 hover:bg-[#F8FAFC] transition-colors cursor-pointer flex gap-3 ${
                       !notification.isRead ? 'bg-blue-50/50' : ''
                     }`}
@@ -103,6 +162,30 @@ const NotificationDropdown = ({ basePath = '/customer/notifications' }) => {
                       </p>
                     </div>
                     {!notification.isRead && (
+=======
+                    onClick={(e) => {
+                      if (notification.trangThai === 'ChuaDoc') markAsRead(notification.id, e);
+                    }}
+                    className={`p-4 hover:bg-[#F8FAFC] transition-colors cursor-pointer flex gap-3 ${
+                      notification.trangThai === 'ChuaDoc' ? 'bg-blue-50/50' : ''
+                    }`}
+                  >
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${bgMap[notification.type] || bgMap['system']}`}>
+                      {iconMap[notification.type] || iconMap['system']}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm mb-0.5 ${notification.trangThai === 'ChuaDoc' ? 'font-bold text-[#0F172A]' : 'font-medium text-[#0F172A]'}`}>
+                        {notification.tieuDe}
+                      </p>
+                      <p className="text-xs text-[#64748B] line-clamp-2 mb-1">
+                        {notification.noiDung}
+                      </p>
+                      <p className="text-[10px] text-[#94A3B8] flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> {new Date(notification.ngayTao).toLocaleString('vi-VN')}
+                      </p>
+                    </div>
+                    {notification.trangThai === 'ChuaDoc' && (
+>>>>>>> admin-login
                       <div className="w-2 h-2 rounded-full bg-[#1D4ED8] self-center flex-shrink-0" />
                     )}
                   </div>

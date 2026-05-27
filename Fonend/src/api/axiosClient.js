@@ -1,7 +1,11 @@
 import axios from 'axios';
 
 const axiosClient = axios.create({
+<<<<<<< HEAD
   baseURL: 'http://localhost:5000/api',
+=======
+  baseURL: 'https://localhost:54343/api',
+>>>>>>> admin-login
   headers: {
     'Content-Type': 'application/json',
   },
