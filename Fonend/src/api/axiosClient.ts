@@ -12,7 +12,7 @@ const axiosClient = axios.create({
 
 // Tự động đính kèm Token khi gọi API
 axiosClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
+  const token = localStorage.getItem('token');
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
