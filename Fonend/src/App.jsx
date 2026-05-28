@@ -40,6 +40,8 @@ import AssignedRequests from './pages/staff/AssignedRequests';
 import UpdateRequestStatus from './pages/staff/UpdateRequestStatus';
 import StaffProfile from './pages/staff/StaffProfile';
 import StaffReviews from './pages/staff/StaffReviews';
+import StaffServices from './pages/staff/StaffServices'; // Nhớ trỏ đúng đường dẫn thư mục của bạn
+import StaffNotifications from './pages/staff/StaffNotifications';
 
 // Admin pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -129,6 +131,8 @@ function App() {
           <Route path="notifications" element={<Notifications />} />
           <Route path="profile" element={<StaffProfile />} />
           <Route path="reviews" element={<StaffReviews />} />
+          <Route path="services" element={<StaffServices />} />
+          <Route path="notifications" element={<StaffNotifications />} />
           <Route path="chat/:requestId" element={<SharedChat />} />
         </Route>
 

@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useStaffData } from '../../hooks/useStaffQueries';
+import { useAuth } from '../../auth/AuthContext';
+import axiosClient from '../../api/axiosClient';
+import toast from 'react-hot-toast';
 
+// Icon service theo danh mục
 const SERVICE_ICONS = {
   'Thay lốp': '🛞',
   'Kích bình': '🔋',
@@ -9,6 +12,7 @@ const SERVICE_ICONS = {
   'Sửa chữa': '🔧',
   'default': '⚙️',
 };
+
 const getIcon = (name) => {
   for (const key of Object.keys(SERVICE_ICONS)) {
     if (name.toLowerCase().includes(key.toLowerCase())) return SERVICE_ICONS[key];
@@ -16,29 +20,57 @@ const getIcon = (name) => {
   return SERVICE_ICONS['default'];
 };
 
-export default function Services() {
-  const { servicesQuery, actions, staffInfo } = useStaffData();
-  const { tatCaDichVu = [], daDangKy = [] } = servicesQuery.data ?? {};
+export default function StaffServices() {
+  const { user } = useAuth();
+  
+  // States lưu dữ liệu từ API
+  const [staffInfo, setStaffInfo] = useState(null);
+  const [tatCaDichVu, setTatCaDichVu] = useState([]);
+  const [daDangKy, setDaDangKy] = useState([]);
+  const [loading, setLoading] = useState(true);
 
+  // States quản lý thao tác trên UI
   const [selected, setSelected] = useState([]);
   const [isDirty, setIsDirty] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
+  // 1. Fetch dữ liệu bằng useEffect thuần
   useEffect(() => {
-    if (daDangKy.length > 0 || tatCaDichVu.length > 0) {
-      setSelected(daDangKy);
-    }
-  }, [daDangKy]);
+    const fetchData = async () => {
+      try {
+        const idTaiKhoan = user?._id || user?.id;
+        if (!idTaiKhoan) return;
 
+        // Lấy IdNhanVien
+        const nvRes = await axiosClient.get(`/NhanVien/by-taikhoan/${idTaiKhoan}`);
+        const sId = nvRes.data.idNhanVien;
+        setStaffInfo(nvRes.data);
+
+        // Lấy danh sách Dịch vụ
+        const srvRes = await axiosClient.get(`/NhanVien/${sId}/services`);
+        const allServices = srvRes.data.tatCaDichVu || [];
+        const registered = srvRes.data.daDangKy || [];
+
+        setTatCaDichVu(allServices);
+        setDaDangKy(registered);
+        setSelected(registered); // Gán mặc định vào danh sách đang chọn
+      } catch (error) {
+        console.error("Lỗi tải dữ liệu dịch vụ", error);
+        toast.error("Không thể tải danh sách dịch vụ");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [user]);
+
+  // 2. Các hàm xử lý
   const toggle = (id) => {
     setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
     setIsDirty(true);
     setSaved(false);
-  };
-
-  const handleSave = () => {
-    if (selected.length === 0) { alert('Vui lòng chọn ít nhất 1 dịch vụ'); return; }
-    actions.updateServices.mutate(selected, { onSuccess: () => { setIsDirty(false); setSaved(true); } });
   };
 
   const handleCancel = () => {
@@ -47,6 +79,31 @@ export default function Services() {
     setSaved(false);
   };
 
+  const handleSave = async () => {
+    if (selected.length === 0) {
+      toast.error('Vui lòng chọn ít nhất 1 dịch vụ');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Gọi API Update Dịch vụ của C#
+      await axiosClient.put(`/NhanVien/${staffInfo.idNhanVien}/services`, {
+        services: selected
+      });
+
+      setDaDangKy(selected); // Đồng bộ lại dữ liệu gốc
+      setIsDirty(false);
+      setSaved(true);
+      toast.success("Đã lưu cấu hình dịch vụ thành công!");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Lưu thất bại");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // 3. Phân nhóm danh mục
   const byCategory = tatCaDichVu.reduce((acc, dv) => {
     const cat = dv.tenDanhMuc ?? 'Khác';
     if (!acc[cat]) acc[cat] = [];
@@ -54,7 +111,7 @@ export default function Services() {
     return acc;
   }, {});
 
-  if (servicesQuery.isLoading) return (
+  if (loading) return (
     <div className="flex items-center justify-center h-64">
       <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
     </div>
@@ -71,9 +128,9 @@ export default function Services() {
         <div className="flex items-center gap-3">
           {saved && <span className="text-green-600 text-xs font-medium flex items-center gap-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Đã lưu</span>}
           <button onClick={handleCancel} disabled={!isDirty} className="px-4 py-2 border border-gray-200 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-40">Hủy bỏ</button>
-          <button onClick={handleSave} disabled={!isDirty || selected.length === 0 || actions.updateServices.isPending} className="px-5 py-2 bg-[#1e3a8a] hover:bg-blue-800 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-40 flex items-center gap-2">
+          <button onClick={handleSave} disabled={!isDirty || selected.length === 0 || isSaving} className="px-5 py-2 bg-[#1e3a8a] hover:bg-blue-800 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-40 flex items-center gap-2">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-            {actions.updateServices.isPending ? 'Đang lưu...' : 'Lưu cấu hình'}
+            {isSaving ? 'Đang lưu...' : 'Lưu cấu hình'}
           </button>
         </div>
       </div>
@@ -90,14 +147,14 @@ export default function Services() {
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 {tatCaDichVu.filter(dv => selected.includes(dv.id)).map(dv => (
-                  <div key={dv.id} className="flex items-center gap-3 p-3 rounded-lg border-2 border-blue-200 bg-blue-50">
-                    <div className="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center text-lg shrink-0">{getIcon(dv.name)}</div>
+                  <div key={dv.id} className="flex items-center gap-3 p-3 rounded-lg border-2 border-blue-200 bg-blue-50 hover:bg-blue-100 transition-colors">
+                    <div className="w-9 h-9 bg-blue-200/50 rounded-lg flex items-center justify-center text-lg shrink-0">{getIcon(dv.name)}</div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-blue-800 truncate">{dv.name}</p>
                       <div className="flex items-center gap-1.5 mt-0.5"><div className="w-1.5 h-1.5 bg-green-500 rounded-full" /><p className="text-xs text-green-600 font-medium">Đang kích hoạt</p></div>
                     </div>
-                    <button onClick={() => toggle(dv.id)} className="text-gray-300 hover:text-red-400 transition-colors shrink-0">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <button onClick={() => toggle(dv.id)} className="text-blue-300 hover:text-red-500 transition-colors shrink-0 p-1">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
                   </div>
                 ))}
@@ -122,10 +179,6 @@ export default function Services() {
                       <div className="mt-3 pt-2.5 border-t border-gray-100">
                         <p className="text-xs text-gray-400">GIÁ CƠ BẢN</p>
                         <p className={`text-sm font-bold ${isOn ? 'text-blue-600' : 'text-gray-700'}`}>{dv.giaCoBan.toLocaleString('vi-VN')}đ</p>
-                      </div>
-                      <div className="absolute bottom-3 right-3 flex items-center gap-1">
-                        <div className={`w-1.5 h-1.5 rounded-full ${isOn ? 'bg-green-500' : 'bg-gray-300'}`} />
-                        <span className={`text-[10px] font-semibold ${isOn ? 'text-green-600' : 'text-gray-400'}`}>{isOn ? 'Bật' : 'Tắt'}</span>
                       </div>
                     </div>
                   );
