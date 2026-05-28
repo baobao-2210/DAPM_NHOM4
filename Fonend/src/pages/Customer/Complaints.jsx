@@ -8,6 +8,7 @@ import Select from '../../components/ui/Select';
 import Textarea from '../../components/ui/Textarea';
 import { AlertTriangle, Plus, X, UploadCloud } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { customerApi } from '../../api/customerApi';
 
 const MOCK_COMPLAINTS = [
   {
@@ -47,25 +48,44 @@ const Complaints = () => {
     description: '',
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.title || !formData.description) {
       toast.error('Vui lòng điền đầy đủ thông tin');
       return;
     }
 
-    const newComplaint = {
-      id: `CMP-${Math.floor(Math.random() * 1000) + 200}`,
-      ...formData,
-      status: 'pending',
-      date: new Date().toLocaleDateString('vi-VN'),
-      image: null,
-    };
+    try {
+      let reqIdNumeric = undefined;
+      if (formData.requestId) {
+        reqIdNumeric = parseInt(formData.requestId.replace('REQ-', ''));
+        if (isNaN(reqIdNumeric)) {
+          toast.error('Mã đơn không hợp lệ');
+          return;
+        }
+      }
 
-    setComplaints([newComplaint, ...complaints]);
-    toast.success('Gửi khiếu nại thành công! Chúng tôi sẽ xử lý sớm nhất.');
-    setIsCreating(false);
-    setFormData({ requestId: '', title: '', description: '' });
+      await customerApi.submitComplaint({
+        requestId: reqIdNumeric || 0, // 0 if no specific request
+        type: formData.title,
+        reason: formData.description,
+      });
+
+      const newComplaint = {
+        id: `CMP-${Math.floor(Math.random() * 1000) + 200}`,
+        ...formData,
+        status: 'pending',
+        date: new Date().toLocaleDateString('vi-VN'),
+        image: null,
+      };
+
+      setComplaints([newComplaint, ...complaints]);
+      toast.success('Gửi khiếu nại thành công! Chúng tôi sẽ xử lý sớm nhất.');
+      setIsCreating(false);
+      setFormData({ requestId: '', title: '', description: '' });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Gửi khiếu nại thất bại');
+    }
   };
 
   return (

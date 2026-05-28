@@ -4,6 +4,8 @@ import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import { CreditCard, FileText, CheckCircle2, Clock, Wallet } from 'lucide-react';
+import { customerApi } from '../../api/customerApi';
+import toast from 'react-hot-toast';
 
 const MOCK_PAYMENTS = [
   {
@@ -42,9 +44,19 @@ const Payments = () => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
 
-  const handlePay = (id, method) => {
-    // Giả lập thanh toán
-    setPayments(payments.map(p => p.id === id ? { ...p, status: 'paid', method } : p));
+  const handlePay = async (payment, method) => {
+    try {
+      const numericId = parseInt(payment.requestId.replace('REQ-', ''));
+      if (isNaN(numericId)) {
+        toast.error('Mã đơn không hợp lệ trong dữ liệu mẫu');
+        return;
+      }
+      await customerApi.payRequest(numericId, { method });
+      setPayments(payments.map(p => p.id === payment.id ? { ...p, status: 'paid', method } : p));
+      toast.success('Thanh toán thành công!');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Thanh toán thất bại');
+    }
   };
 
   return (
@@ -117,10 +129,10 @@ const Payments = () => {
               {/* Actions */}
               {payment.status === 'pending' && (
                 <div className="flex flex-wrap sm:flex-col gap-2 shrink-0">
-                  <Button size="sm" onClick={() => handlePay(payment.id, 'VNPay')} className="bg-[#005BAA] hover:bg-[#004A8B] text-white">
+                  <Button size="sm" onClick={() => handlePay(payment, 'VNPay')} className="bg-[#005BAA] hover:bg-[#004A8B] text-white">
                     Thanh toán VNPay
                   </Button>
-                  <Button size="sm" onClick={() => handlePay(payment.id, 'Momo')} className="bg-[#A50064] hover:bg-[#850050] text-white">
+                  <Button size="sm" onClick={() => handlePay(payment, 'Momo')} className="bg-[#A50064] hover:bg-[#850050] text-white">
                     Thanh toán Momo
                   </Button>
                 </div>

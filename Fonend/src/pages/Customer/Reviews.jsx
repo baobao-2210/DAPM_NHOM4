@@ -8,6 +8,7 @@ import Textarea from '../../components/ui/Textarea';
 import Badge from '../../components/ui/Badge';
 import { Star, MessageSquare } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { customerApi } from '../../api/customerApi';
 
 const MOCK_REVIEWS = [
   {
@@ -43,24 +44,36 @@ const Reviews = () => {
   const pendingReviews = reviews.filter((r) => r.status === 'pending');
   const completedReviews = reviews.filter((r) => r.status === 'reviewed');
 
-  const handleSubmitReview = (id) => {
+  const handleSubmitReview = async (review) => {
     if (rating === 0) {
       toast.error('Vui lòng chọn số sao đánh giá');
       return;
     }
     
-    setReviews(
-      reviews.map((r) =>
-        r.id === id
-          ? { ...r, status: 'reviewed', rating, comment, date: new Date().toLocaleDateString('vi-VN') }
-          : r
-      )
-    );
-    
-    toast.success('Gửi đánh giá thành công! Cảm ơn bạn.');
-    setRating(0);
-    setComment('');
-    setSubmittingId(null);
+    try {
+      const numericId = parseInt(review.requestId.replace('REQ-', ''));
+      if (isNaN(numericId)) {
+        toast.error('Mã đơn không hợp lệ trong dữ liệu mẫu');
+        return;
+      }
+
+      await customerApi.reviewRequest(numericId, { rating, comment });
+      
+      setReviews(
+        reviews.map((r) =>
+          r.id === review.id
+            ? { ...r, status: 'reviewed', rating, comment, date: new Date().toLocaleDateString('vi-VN') }
+            : r
+        )
+      );
+      
+      toast.success('Gửi đánh giá thành công! Cảm ơn bạn.');
+      setRating(0);
+      setComment('');
+      setSubmittingId(null);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Gửi đánh giá thất bại');
+    }
   };
 
   return (
@@ -148,7 +161,7 @@ const Reviews = () => {
                           <Button variant="outline" onClick={() => { setSubmittingId(null); setRating(0); }}>
                             Hủy
                           </Button>
-                          <Button onClick={() => handleSubmitReview(review.id)}>
+                          <Button onClick={() => handleSubmitReview(review)}>
                             Gửi đánh giá
                           </Button>
                         </div>

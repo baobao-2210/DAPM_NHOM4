@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthContext';
-import axiosClient from '../../api/axiosClient';
+import { customerApi } from '../../api/customerApi';
 import toast from 'react-hot-toast';
 import { User, Mail, Phone, MapPin, Save, Edit3 } from 'lucide-react';
 import PageHeader from '../../components/ui/PageHeader';
@@ -16,7 +16,7 @@ const Profile = () => {
   const [editing, setEditing] = useState(false);
 
   useEffect(() => {
-    axiosClient.get('/customer/profile')
+    customerApi.getProfile()
       .then(res => {
         const data = res.data?.data || res.data;
         setForm({ name: data.name || '', email: data.email || '', phone: data.phone || '', address: data.address || '' });
@@ -31,7 +31,7 @@ const Profile = () => {
     if (!form.name || !form.email) { toast.error('Vui lòng điền tên và email'); return; }
     setLoading(true);
     try {
-      const res = await axiosClient.put('/customer/profile', form);
+      const res = await customerApi.updateProfile(form);
       updateUser(res.data?.data || form);
       toast.success('Cập nhật hồ sơ thành công!');
       setEditing(false);

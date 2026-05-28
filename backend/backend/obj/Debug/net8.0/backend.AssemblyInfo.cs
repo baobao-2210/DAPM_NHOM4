@@ -13,11 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("backend")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-<<<<<<< HEAD
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+eb2883d9d7bc26f315c56fda69ad5b6931f48f5b")]
-=======
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5ac09ceb49272c9f89604a20adc6aa2357449877")]
->>>>>>> admin-login
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ee45eda584c4298a01d3f5fc52186fae738b1935")]
 [assembly: System.Reflection.AssemblyProductAttribute("backend")]
 [assembly: System.Reflection.AssemblyTitleAttribute("backend")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

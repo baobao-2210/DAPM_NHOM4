@@ -3,7 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import axiosClient from '../../api/axiosClient';
+import { customerApi } from '../../api/customerApi';
+import { adminApi } from '../../api/adminApi';
 import toast from 'react-hot-toast';
 import { MapPin, Navigation, Car, Wrench, FileText, Send, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import PageHeader from '../../components/ui/PageHeader';
@@ -63,11 +64,11 @@ const CreateRescueRequest = () => {
 
   useEffect(() => {
     Promise.all([
-      axiosClient.get('/customer/vehicles').catch(() => ({ data: [
+      customerApi.getVehicles().catch(() => ({ data: [
         { _id: 'v-mock-1', brand: 'Toyota', model: 'Vios', licensePlate: '51G-123.45', year: 2021, color: 'Trắng', type: 'Sedan' },
         { _id: 'v-mock-2', brand: 'Honda', model: 'CR-V', licensePlate: '51H-678.90', year: 2022, color: 'Đen', type: 'SUV' }
       ] })),
-      axiosClient.get('/admin/services').catch(() => ({ data: [
+      customerApi.getServices().catch(() => ({ data: [
         { _id: 's-mock-1', name: 'Kéo xe khẩn cấp', description: 'Kéo xe về gara gần nhất hoặc địa chỉ yêu cầu.', price: 500000, icon: '🔧', category: 'Khẩn cấp' },
         { _id: 's-mock-2', name: 'Thay lốp / Vá lốp', description: 'Hỗ trợ thay lốp dự phòng hoặc vá lốp tại chỗ.', price: 150000, icon: '🛞', category: 'Cơ khí' },
         { _id: 's-mock-3', name: 'Kích bình ắc quy', description: 'Kích bình ắc quy khi xe không thể khởi động.', price: 100000, icon: '🔋', category: 'Điện' }
@@ -127,7 +128,7 @@ const CreateRescueRequest = () => {
         address: form.address,
         location: form.lat && form.lng ? { lat: form.lat, lng: form.lng } : undefined,
       };
-      await axiosClient.post('/customer/rescue-requests', payload);
+      await customerApi.createRequest(payload);
       toast.success('Yêu cầu cứu hộ đã được gửi!');
       navigate('/customer/rescue-requests');
     } catch (err) {
@@ -144,8 +145,8 @@ const CreateRescueRequest = () => {
 
   const set = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
 
-  const selectedService = services.find(s => s._id === form.serviceId);
-  const selectedVehicle = vehicles.find(v => v._id === form.vehicleId);
+  const selectedService = services.find(s => String(s._id) === String(form.serviceId));
+  const selectedVehicle = vehicles.find(v => String(v._id) === String(form.vehicleId));
 
   const canGoNext = () => {
     if (step === 0) return !!form.serviceId && !!form.description;
@@ -200,22 +201,25 @@ const CreateRescueRequest = () => {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                 {services.map(s => (
-                  <label
+                  <div
                     key={s._id}
+                    onClick={() => {
+                      setForm(p => ({ ...p, serviceId: s._id }));
+                      toast.success(`Đã chọn: ${s.name}`);
+                    }}
                     className={`flex items-start gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all hover:shadow-md ${
-                      form.serviceId === s._id
+                      String(form.serviceId) === String(s._id)
                         ? 'border-[#1D4ED8] bg-[#EFF6FF]'
                         : 'border-[#E2E8F0] bg-white hover:border-[#1D4ED8]/50'
                     }`}
                   >
-                    <input type="radio" name="service" value={s._id} checked={form.serviceId === s._id} onChange={set('serviceId')} className="hidden" />
                     <div className="text-2xl bg-white w-12 h-12 rounded-xl flex items-center justify-center shadow-sm border border-[#E2E8F0] flex-shrink-0">{s.icon || '🔧'}</div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-[#0F172A]">{s.name}</p>
                       <p className="text-xs text-[#64748B] mt-1 leading-relaxed line-clamp-2">{s.description}</p>
                       {s.price && <p className="text-sm font-bold text-[#1D4ED8] mt-2">{s.price.toLocaleString('vi-VN')}đ</p>}
                     </div>
-                  </label>
+                  </div>
                 ))}
               </div>
             )}
@@ -243,34 +247,34 @@ const CreateRescueRequest = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* No vehicle option */}
-              <label
+              <div
+                onClick={() => setForm(p => ({ ...p, vehicleId: '' }))}
                 className={`flex items-center gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all hover:shadow-md ${
                   !form.vehicleId
                     ? 'border-[#1D4ED8] bg-[#EFF6FF]'
                     : 'border-[#E2E8F0] bg-white hover:border-[#1D4ED8]/50'
                 }`}
               >
-                <input type="radio" name="vehicle" value="" checked={!form.vehicleId} onChange={() => setForm(p => ({ ...p, vehicleId: '' }))} className="hidden" />
                 <span className="text-2xl bg-white w-12 h-12 rounded-xl flex items-center justify-center shadow-sm border border-[#E2E8F0]">🚗</span>
                 <span className="text-sm font-bold text-[#0F172A]">Không chọn xe cụ thể</span>
-              </label>
+              </div>
 
               {vehicles.map(v => (
-                <label
+                <div
                   key={v._id}
+                  onClick={() => setForm(p => ({ ...p, vehicleId: v._id }))}
                   className={`flex items-center gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all hover:shadow-md ${
-                    form.vehicleId === v._id
+                    String(form.vehicleId) === String(v._id)
                       ? 'border-[#1D4ED8] bg-[#EFF6FF]'
                       : 'border-[#E2E8F0] bg-white hover:border-[#1D4ED8]/50'
                   }`}
                 >
-                  <input type="radio" name="vehicle" value={v._id} checked={form.vehicleId === v._id} onChange={set('vehicleId')} className="hidden" />
                   <span className="text-2xl bg-white w-12 h-12 rounded-xl flex items-center justify-center shadow-sm border border-[#E2E8F0]">🚙</span>
                   <div>
                     <p className="text-sm font-bold text-[#0F172A]">{v.brand} {v.model}</p>
                     <p className="text-xs text-[#64748B] font-mono font-semibold mt-1">{v.licensePlate}</p>
                   </div>
-                </label>
+                </div>
               ))}
             </div>
 

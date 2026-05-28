@@ -1,4 +1,6 @@
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import axiosClient from '../../api/axiosClient';
 import { useAuth } from '../../auth/AuthContext';
 import {
   Truck, Phone, Shield, Clock, Star, ArrowRight, CheckCircle, MapPin, Zap,
@@ -19,13 +21,13 @@ const features = [
   { icon: Zap, title: 'Đặt dịch vụ dễ dàng', desc: 'Chỉ vài bước đơn giản để đặt dịch vụ cứu hộ', bg: 'bg-[#EFF6FF]', iconColor: 'text-[#1D4ED8]' },
 ];
 
-const services = [
-  { icon: '🔧', title: 'Kéo xe', desc: 'Kéo xe đến gara gần nhất hoặc địa điểm bạn chỉ định', price: '250,000đ', category: 'Khẩn cấp' },
-  { icon: '🔋', title: 'Cứu bình', desc: 'Kích bình ắc quy hoặc thay bình tại chỗ', price: '150,000đ', category: 'Điện' },
-  { icon: '🛞', title: 'Thay lốp', desc: 'Thay lốp dự phòng hoặc vá lốp tại chỗ', price: '100,000đ', category: 'Cơ khí' },
-  { icon: '⛽', title: 'Tiếp xăng', desc: 'Tiếp nhiên liệu khẩn cấp khi hết xăng giữa đường', price: '80,000đ', category: 'Khẩn cấp' },
-  { icon: '🔑', title: 'Mở khóa xe', desc: 'Hỗ trợ khi bạn bị khóa chìa trong xe', price: '200,000đ', category: 'Khẩn cấp' },
-  { icon: '🚗', title: 'Sửa xe tại chỗ', desc: 'Sửa chữa cơ bản tại chỗ, không cần kéo xe', price: '300,000đ', category: 'Cơ khí' },
+const mockServicesFallback = [
+  { icon: '🔧', name: 'Kéo xe khẩn cấp', description: 'Kéo xe đến gara gần nhất hoặc địa điểm bạn chỉ định', price: 250000, category: 'Khẩn cấp' },
+  { icon: '🔋', name: 'Cứu bình', description: 'Kích bình ắc quy hoặc thay bình tại chỗ', price: 150000, category: 'Điện' },
+  { icon: '🛞', name: 'Thay lốp', description: 'Thay lốp dự phòng hoặc vá lốp tại chỗ', price: 100000, category: 'Cơ khí' },
+  { icon: '⛽', name: 'Tiếp xăng', description: 'Tiếp nhiên liệu khẩn cấp khi hết xăng giữa đường', price: 80000, category: 'Khẩn cấp' },
+  { icon: '🔑', name: 'Mở khóa xe', description: 'Hỗ trợ khi bạn bị khóa chìa trong xe', price: 200000, category: 'Khẩn cấp' },
+  { icon: '🚗', name: 'Sửa xe tại chỗ', description: 'Sửa chữa cơ bản tại chỗ, không cần kéo xe', price: 300000, category: 'Cơ khí' },
 ];
 
 const howItWorks = [
@@ -57,8 +59,15 @@ const testimonials = [
 ];
 
 const Home = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [services, setServices] = useState([]);
+
+  useEffect(() => {
+    axiosClient.get('/DichVu')
+      .then(res => setServices((res.data?.data || res.data).slice(0, 6)))
+      .catch(() => setServices(mockServicesFallback));
+  }, []);
 
   const handleRescue = () => {
     if (!user) {
@@ -284,21 +293,24 @@ const Home = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {services.map(({ icon, title, desc, price, category }) => (
-              <div
-                key={title}
-                className="group p-6 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300"
-              >
-                <div className="text-4xl mb-4">{icon}</div>
-                <span className="text-xs px-2.5 py-1 bg-[#EFF6FF] text-[#1D4ED8] font-medium rounded-full mb-3 inline-block">
-                  {category}
-                </span>
-                <h3 className="text-[#0F172A] font-bold text-lg mb-2">{title}</h3>
-                <p className="text-[#64748B] text-sm leading-relaxed mb-4">{desc}</p>
+            {services.map(({ _id, icon, name, description, price, category }) => (
+              <div key={_id || name} className="bg-white rounded-2xl p-6 border border-[#E2E8F0] shadow-sm hover:shadow-md transition-all group">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-[#EFF6FF] flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                    {icon || '🔧'}
+                  </div>
+                  {category && (
+                    <span className="px-3 py-1 bg-[#EFF6FF] text-[#1D4ED8] text-xs font-bold rounded-full border border-[#1D4ED8]/10">
+                      {category}
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-[#0F172A] font-bold text-lg mb-2">{name}</h3>
+                <p className="text-[#64748B] text-sm leading-relaxed mb-4">{description}</p>
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-[#94A3B8] text-xs">Từ</span>
-                    <p className="text-[#FBBF24] font-bold text-lg">{price}</p>
+                    <p className="text-[#FBBF24] font-bold text-lg">{price ? `${price.toLocaleString('vi-VN')}đ` : 'Liên hệ'}</p>
                   </div>
                   <button
                     onClick={handleRescue}
