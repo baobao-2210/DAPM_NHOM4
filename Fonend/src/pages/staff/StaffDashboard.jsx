@@ -7,11 +7,12 @@ import StatCard from '../../components/ui/StatCard';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import EmptyState from '../../components/ui/EmptyState';
-import { ClipboardList, CheckCircle, Clock, Truck, AlertCircle, MapPin, Navigation } from 'lucide-react';
+import { ClipboardList, CheckCircle, Clock, AlertCircle, MapPin, Navigation } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
+// Sửa lỗi icon của Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
@@ -22,67 +23,85 @@ L.Icon.Default.mergeOptions({
 const staffIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
+  iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34],
 });
 
 const customerIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
+  iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34],
 });
 
-const mockStaffLocation = [16.0544, 108.2022];
-
-const mockCustomerLocations = [
-  { id: 1, name: 'Nguyễn Văn A', address: 'Cầu Rồng, Đà Nẵng', lat: 16.0611, lng: 108.2272, service: 'Kéo xe' },
-  { id: 2, name: 'Trần Thị B', address: 'Cầu Sông Hàn, Đà Nẵng', lat: 16.0717, lng: 108.2250, service: 'Thay lốp' },
-  { id: 3, name: 'Phạm Văn C', address: 'Chợ Cồn, Đà Nẵng', lat: 16.0694, lng: 108.2144, service: 'Sạc bình' },
-];
-
-const statusBadgeVariant = {
-  Pending: 'warning',
-  Assigned: 'primary',
-  OnGoing: 'info',
-  Completed: 'success',
-};
-
-const statusLabel = {
-  Pending: 'Chờ xử lý',
-  Assigned: 'Đã phân công',
-  OnGoing: 'Đang xử lý',
-  Completed: 'Hoàn thành',
-};
+const mockStaffLocation = [16.0544, 108.2022]; // Tạm dùng tọa độ Đà Nẵng làm gốc
 
 const StaffDashboard = () => {
   const { user } = useAuth();
-  const [requests, setRequests] = useState([]);
+  
+  // States lưu dữ liệu từ C#
+  const [staffId, setStaffId] = useState(null);
+  const [pendingRequests, setPendingRequests] = useState([]);
+  const [activeTask, setActiveTask] = useState(null);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // 1. Lấy staffId từ idTaiKhoan
   useEffect(() => {
-    axiosClient.get('/staff/rescue-requests')
-      .then(res => setRequests(res.data?.data || res.data || []))
-      .catch(() => setRequests([]))
-      .finally(() => setLoading(false));
-  }, []);
+    const idTaiKhoan = user?._id || user?.id;
+    if (idTaiKhoan) {
+      axiosClient.get(`/NhanVien/by-taikhoan/${idTaiKhoan}`)
+        .then(res => setStaffId(res.data.idNhanVien))
+        .catch(err => console.error("Lỗi lấy thông tin NV", err));
+    }
+  }, [user]);
 
-  const totalRequests = requests.length;
-  const ongoingCount = requests.filter(r => r.status === 'OnGoing').length;
-  const assignedCount = requests.filter(r => r.status === 'Assigned').length;
-  const completedCount = requests.filter(r => r.status === 'Completed').length;
+  // 2. Có staffId thì gọi các API Yêu cầu & Thống kê
+  useEffect(() => {
+    if (!staffId) return;
 
-  const recent = requests.filter(r => r.status !== 'Completed').slice(0, 5);
+    const fetchData = async () => {
+      try {
+        const now = new Date();
+        const [pendingRes, activeRes, historyRes] = await Promise.all([
+          axiosClient.get(`/YeuCau/pending?staffId=${staffId}`),
+          axiosClient.get(`/YeuCau/active-task/${staffId}`),
+          axiosClient.get(`/NhanVien/${staffId}/history?thang=${now.getMonth() + 1}&nam=${now.getFullYear()}`)
+        ]);
 
-  const nearestCustomer = mockCustomerLocations[0];
-  const polylinePositions = [
-    mockStaffLocation,
-    [nearestCustomer.lat, nearestCustomer.lng],
-  ];
+        setPendingRequests(pendingRes.data || []);
+        setActiveTask(activeRes.data || null);
+        setStats(historyRes.data?.thongKe || null);
+      } catch (error) {
+        console.error("Lỗi lấy dữ liệu Dashboard", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [staffId]);
+
+  if (loading) return <Loading fullscreen={false} />;
+
+  // Tính toán dữ liệu hiển thị bản đồ
+  const customerLocations = pendingRequests.map(r => ({
+    id: r.id, name: r.tenKhachHang, address: r.noiSuCo, service: r.tenDichVu,
+    lat: r.viDo || 16.0611 + (Math.random() * 0.02 - 0.01), // Dùng random nếu DB chưa nhập GPS
+    lng: r.kinhDo || 108.2272 + (Math.random() * 0.02 - 0.01)
+  }));
+
+  // Ưu tiên hiển thị đường đi tới khách hàng đang xử lý (nếu có)
+  let polylinePositions = [];
+  if (activeTask) {
+    const activeLat = activeTask.viDo || 16.0611;
+    const activeLng = activeTask.kinhDo || 108.2272;
+    polylinePositions = [mockStaffLocation, [activeLat, activeLng]];
+    customerLocations.push({
+      id: activeTask.id, name: activeTask.tenKhachHang, address: activeTask.noiSuCo, 
+      service: activeTask.tenDichVu, lat: activeLat, lng: activeLng, isActive: true
+    });
+  } else if (customerLocations.length > 0) {
+    polylinePositions = [mockStaffLocation, [customerLocations[0].lat, customerLocations[0].lng]];
+  }
 
   return (
     <div>
@@ -91,43 +110,31 @@ const StaffDashboard = () => {
         description="Tổng quan công việc hôm nay"
       />
 
-      {/* Stats */}
+      {/* STATS BÓC TỪ DATABASE C# */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard
-          title="Tổng đơn"
-          value={totalRequests}
-          icon={ClipboardList}
-          iconBg="bg-[#EFF6FF]"
-          iconColor="text-[#1D4ED8]"
-          trend={12}
-          trendLabel="So với tuần trước"
+          title="Tổng đơn tháng"
+          value={stats?.tongDon || 0}
+          icon={ClipboardList} iconBg="bg-[#EFF6FF]" iconColor="text-[#1D4ED8]"
         />
         <StatCard
-          title="Đang xử lý"
-          value={ongoingCount}
-          icon={AlertCircle}
-          iconBg="bg-[#FFFBEB]"
-          iconColor="text-[#F59E0B]"
+          title="Đơn đang xử lý"
+          value={activeTask ? 1 : 0}
+          icon={AlertCircle} iconBg="bg-[#FFFBEB]" iconColor="text-[#F59E0B]"
         />
         <StatCard
-          title="Chờ xử lý"
-          value={assignedCount}
-          icon={Clock}
-          iconBg="bg-[#EFF6FF]"
-          iconColor="text-[#1D4ED8]"
+          title="Đơn chờ nhận"
+          value={pendingRequests.length}
+          icon={Clock} iconBg="bg-[#EFF6FF]" iconColor="text-[#1D4ED8]"
         />
         <StatCard
-          title="Hoàn thành"
-          value={completedCount}
-          icon={CheckCircle}
-          iconBg="bg-[#F0FDF4]"
-          iconColor="text-[#22C55E]"
-          trend={8}
-          trendLabel="Hoàn thành tốt"
+          title="Đã hoàn thành"
+          value={stats?.donHoanThanh || 0}
+          icon={CheckCircle} iconBg="bg-[#F0FDF4]" iconColor="text-[#22C55E]"
         />
       </div>
 
-      {/* Map Section */}
+      {/* BẢN ĐỒ */}
       <Card variant="default" padding={false} className="mb-8 overflow-hidden">
         <Card.Header>
           <div className="flex items-center gap-2">
@@ -141,103 +148,65 @@ const StaffDashboard = () => {
           </div>
         </Card.Header>
         <div className="h-[400px] relative z-0">
-          <MapContainer
-            center={mockStaffLocation}
-            zoom={14}
-            style={{ height: '100%', width: '100%' }}
-          >
-            <TileLayer
-              attribution='&copy; OpenStreetMap'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            {/* Staff marker */}
+          <MapContainer center={mockStaffLocation} zoom={13} style={{ height: '100%', width: '100%' }}>
+            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+            
             <Marker position={mockStaffLocation} icon={staffIcon}>
-              <Popup>
-                <div className="text-center">
-                  <p className="font-bold text-[#0F172A]">📍 Vị trí của bạn</p>
-                  <p className="text-xs text-[#64748B]">{user?.name || 'Nhân viên'}</p>
-                </div>
-              </Popup>
+              <Popup><p className="font-bold">📍 Vị trí của bạn</p></Popup>
             </Marker>
-            {/* Customer markers */}
-            {mockCustomerLocations.map(c => (
+            
+            {customerLocations.map(c => (
               <Marker key={c.id} position={[c.lat, c.lng]} icon={customerIcon}>
                 <Popup>
                   <div>
-                    <p className="font-bold text-[#0F172A]">{c.name}</p>
+                    <p className="font-bold text-[#0F172A]">{c.name} {c.isActive && "(Đang xử lý)"}</p>
                     <p className="text-xs text-[#64748B]">{c.service}</p>
                     <p className="text-xs text-[#64748B]">{c.address}</p>
                   </div>
                 </Popup>
               </Marker>
             ))}
-            {/* Polyline to nearest customer */}
-            <Polyline
-              positions={polylinePositions}
-              pathOptions={{ color: '#1D4ED8', weight: 3, dashArray: '10, 10' }}
-            />
+            {polylinePositions.length > 0 && (
+              <Polyline positions={polylinePositions} pathOptions={{ color: '#1D4ED8', weight: 3, dashArray: '10, 10' }} />
+            )}
           </MapContainer>
-        </div>
-        <div className="px-6 py-3 bg-[#F8FAFC] border-t border-[#E2E8F0]">
-          <div className="flex items-center gap-4 text-xs text-[#64748B]">
-            <span className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-[#1D4ED8]" /> Vị trí của bạn
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-[#EF4444]" /> Khách hàng chờ
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-6 h-0 border-t-2 border-dashed border-[#1D4ED8]" /> Tuyến đường gần nhất
-            </span>
-          </div>
         </div>
       </Card>
 
-      {/* Pending Requests */}
-      {loading ? <Loading fullscreen={false} /> : (
-        <Card variant="default" padding={false}>
-          <Card.Header>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-[#FFFBEB] flex items-center justify-center">
-                <Clock className="w-4 h-4 text-[#F59E0B]" />
-              </div>
-              <h2 className="text-base font-bold text-[#0F172A]">Đơn đang chờ xử lý</h2>
-              {recent.length > 0 && (
-                <Badge variant="warning" size="sm">{recent.length}</Badge>
-              )}
+      {/* DANH SÁCH ĐƠN CHỜ NHẬN */}
+      <Card variant="default" padding={false}>
+        <Card.Header>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-[#FFFBEB] flex items-center justify-center">
+              <Clock className="w-4 h-4 text-[#F59E0B]" />
             </div>
-          </Card.Header>
-          {recent.length === 0 ? (
-            <EmptyState
-              icon={CheckCircle}
-              title="Tuyệt vời!"
-              description="Không có đơn nào đang chờ xử lý"
-            />
-          ) : (
-            <div className="divide-y divide-[#F1F5F9]">
-              {recent.map(req => {
-                const variant = statusBadgeVariant[req.status] || 'default';
-                const label = statusLabel[req.status] || req.status;
-                return (
-                  <div key={req._id} className="flex items-center justify-between px-6 py-4 hover:bg-[#F8FAFC] transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] flex items-center justify-center text-lg">🚗</div>
-                      <div>
-                        <p className="text-sm font-semibold text-[#0F172A]">{req.service?.name || 'Cứu hộ xe'}</p>
-                        <p className="text-xs text-[#64748B] mt-0.5 flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          {req.customer?.name || 'Khách hàng'} • {req.address || 'Chưa có địa chỉ'}
-                        </p>
-                      </div>
-                    </div>
-                    <Badge variant={variant} size="sm" dot>{label}</Badge>
+            <h2 className="text-base font-bold text-[#0F172A]">Đơn chờ tiếp nhận</h2>
+            {pendingRequests.length > 0 && <Badge variant="warning" size="sm">{pendingRequests.length}</Badge>}
+          </div>
+        </Card.Header>
+        
+        {pendingRequests.length === 0 ? (
+          <EmptyState icon={CheckCircle} title="Tuyệt vời!" description="Không có đơn nào đang chờ xử lý" />
+        ) : (
+          <div className="divide-y divide-[#F1F5F9]">
+            {pendingRequests.map(req => (
+              <div key={req.id} className="flex items-center justify-between px-6 py-4 hover:bg-[#F8FAFC] transition-colors">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] flex items-center justify-center text-lg">🚗</div>
+                  <div>
+                    <p className="text-sm font-semibold text-[#0F172A]">{req.tenDichVu}</p>
+                    <p className="text-xs text-[#64748B] mt-0.5 flex items-center gap-1">
+                      <MapPin className="w-3 h-3" />
+                      {req.tenKhachHang} • {req.noiSuCo}
+                    </p>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </Card>
-      )}
+                </div>
+                <Badge variant="warning" size="sm" dot>Chờ nhận</Badge>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
     </div>
   );
 };

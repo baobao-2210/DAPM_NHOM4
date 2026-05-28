@@ -29,7 +29,7 @@ import StaffRequestDetail from './pages/staff/RequestDetail';
 import StaffChat          from './pages/staff/Chat';
 import StaffHistory       from './pages/staff/History';
 import StaffProfile       from './pages/staff/Profile';
-import StaffServices      from './pages/staff/Services';
+import StaffServices      from './pages/staff/StaffServices';
 import StaffPrivateRoute  from './components/StaffPrivateRoute';
 import StaffNotifications from './pages/staff/Notifications';
 
