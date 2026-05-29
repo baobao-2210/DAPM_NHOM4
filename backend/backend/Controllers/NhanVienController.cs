@@ -179,6 +179,29 @@ namespace backend.Controllers
             return Ok(new { message = "Cập nhật thông tin thành công" });
         }
 
+        // GET /api/NhanVien/{id}/reviews
+        [HttpGet("{id}/reviews")]
+        public async Task<IActionResult> GetReviews(int id)
+        {
+            var reviews = await _context.Danhgia // <--- Đã sửa thành Danhgia (bỏ chữ s)
+                .Include(d => d.IdYeuCauNavigation).ThenInclude(y => y.IdKhachHangNavigation).ThenInclude(k => k.IdTaiKhoanNavigation)
+                .Include(d => d.IdYeuCauNavigation).ThenInclude(y => y.IdDichVuNavigation)
+                .Where(d => d.IdNhanVien == id)  // <--- Tối ưu hóa: Lọc trực tiếp bằng IdNhanVien
+                .OrderByDescending(d => d.ThoiGian)
+                .Select(d => new
+                {
+                    id = d.IdYeuCau,
+                    customerName = d.IdYeuCauNavigation.IdKhachHangNavigation.IdTaiKhoanNavigation.HoTen,
+                    rating = d.SoSao,
+                    date = d.ThoiGian,
+                    comment = d.NhanXet,
+                    service = d.IdYeuCauNavigation.IdDichVuNavigation.TenDichVu
+                })
+                .ToListAsync();
+
+            return Ok(reviews);
+        }
+
         // ═══════════════════════════════════════════════════════════════
         // UC-28  GET /api/NhanVien/{id}/services
         // Trả về tất cả dịch vụ hoạt động + danh sách đã đăng ký

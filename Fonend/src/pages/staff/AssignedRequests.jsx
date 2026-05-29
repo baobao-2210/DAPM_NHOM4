@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../auth/AuthContext';
 import axiosClient from '../../api/axiosClient';
 import Loading from '../../components/Loading';
 import PageHeader from '../../components/ui/PageHeader';
@@ -7,7 +8,7 @@ import Tabs from '../../components/ui/Tabs';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import EmptyState from '../../components/ui/EmptyState';
-import { ClipboardList, ChevronRight, Clock, Truck, CheckCircle, AlertCircle, MapPin, Calendar } from 'lucide-react';
+import { ClipboardList, ChevronRight, MapPin, Calendar } from 'lucide-react';
 
 const statusBadgeVariant = {
   Pending: 'warning',
@@ -24,16 +25,66 @@ const statusLabel = {
 };
 
 const AssignedRequests = () => {
+  const { user } = useAuth();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('active');
 
   useEffect(() => {
-    axiosClient.get('/staff/rescue-requests')
-      .then(res => setRequests(res.data?.data || res.data || []))
-      .catch(() => setRequests([]))
-      .finally(() => setLoading(false));
-  }, []);
+    const fetchAssignedRequests = async () => {
+      try {
+        const idTaiKhoan = user?._id || user?.id;
+        if (!idTaiKhoan) return;
+
+        // B1: Lấy thông tin IdNhanVien
+        const nvRes = await axiosClient.get(`/NhanVien/by-taikhoan/${idTaiKhoan}`);
+        const staffId = nvRes.data.idNhanVien;
+
+        // B2: Lấy đơn đang xử lý hiện tại và lịch sử đơn trong tháng
+        const now = new Date();
+        const [activeRes, historyRes] = await Promise.all([
+          axiosClient.get(`/YeuCau/active-task/${staffId}`),
+          axiosClient.get(`/NhanVien/${staffId}/history?thang=${now.getMonth() + 1}&nam=${now.getFullYear()}`)
+        ]);
+
+        const rawList = [];
+        // Nếu có đơn đang active, đẩy vào đầu danh sách
+        if (activeRes.data) {
+          rawList.push(activeRes.data);
+        }
+        
+        // Lấy danh sách lịch sử từ cục data của lịch cứu hộ
+        const historyList = historyRes.data?.lichCuuHo || [];
+        historyList.forEach(item => {
+          // Tránh trùng lặp nếu đơn active đã nằm trong danh sách lịch sử
+          if (!rawList.some(r => r.id === item.id)) {
+            rawList.push(item);
+          }
+        });
+
+        // B3: Ánh xạ cấu trúc dữ liệu Backend C# về thuộc tính giao diện của Frontend
+        const formattedData = rawList.map(item => ({
+          _id: item.id.toString(),
+          status: item.trangThaiHienTai === 'HoanThanh' ? 'Completed' :
+                  item.trangThaiHienTai === 'DangXuLy' ? 'OnGoing' :
+                  item.trangThaiHienTai === 'DaPhanCong' ? 'Assigned' : 'Pending',
+          service: { name: item.tenDichVu },
+          address: item.noiSuCo,
+          customer: { name: item.tenKhachHang, phone: item.soDienThoai },
+          createdAt: item.ngayTao
+        }));
+
+        setRequests(formattedData);
+      } catch (error) {
+        console.error("Lỗi lấy danh sách đơn được giao:", error);
+        setRequests([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAssignedRequests();
+  }, [user]);
 
   const filtered = filter === 'active'
     ? requests.filter(r => r.status !== 'Completed')
@@ -68,13 +119,8 @@ const AssignedRequests = () => {
         description="Danh sách yêu cầu cứu hộ được phân công cho bạn"
       />
 
-      {/* Filter tabs */}
       <div className="mb-6">
-        <Tabs
-          tabs={tabItems}
-          activeTab={filter}
-          onChange={setFilter}
-        />
+        <Tabs tabs={tabItems} activeTab={filter} onChange={setFilter} />
       </div>
 
       {loading ? (
@@ -93,16 +139,12 @@ const AssignedRequests = () => {
             const variant = statusBadgeVariant[req.status] || 'default';
             const label = statusLabel[req.status] || req.status;
             return (
-              <Link
-                key={req._id}
-                to={`/staff/requests/${req._id}`}
-                className="block"
-              >
+              <Link key={req._id} to={`/staff/requests/${req._id}`} className="block">
                 <Card variant="interactive" className="group">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-xl bg-[#EFF6FF] flex items-center justify-center text-2xl flex-shrink-0 group-hover:scale-105 transition-transform">
-                        🚗
+                        🛠️
                       </div>
                       <div>
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-1.5">
