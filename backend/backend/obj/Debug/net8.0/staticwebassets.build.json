@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "/Aw86h/NPjRmgkguIi0V27iQf1TnwUlnOjKzjajTkb8=",
+  "Hash": "DEwP5Al9g9ZSgu5izB0/i04D5oBpY7fXYoVgaLHBvCs=",
   "Source": "backend",
   "BasePath": "_content/backend",
   "Mode": "Default",
@@ -15,6 +15,111 @@
       "Pattern": "**"
     }
   ],
-  "Assets": [],
-  "Endpoints": []
+  "Assets": [
+    {
+      "Identity": "C:\\Users\\Dell\\Documents\\DAPM_NHOM4\\backend\\backend\\wwwroot\\uploads\\32916cc6-2cbc-48fc-a2f8-6b099bf85fe4.jpg",
+      "SourceId": "backend",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\Dell\\Documents\\DAPM_NHOM4\\backend\\backend\\wwwroot\\",
+      "BasePath": "_content/backend",
+      "RelativePath": "uploads/32916cc6-2cbc-48fc-a2f8-6b099bf85fe4#[.{fingerprint}]?.jpg",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "Fingerprint": "wde2iclhnk",
+      "Integrity": "rLjrN/ocz/n7mdSvXxNv26ep7Ca518LWWqA58GrpekY=",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\uploads\\32916cc6-2cbc-48fc-a2f8-6b099bf85fe4.jpg"
+    }
+  ],
+  "Endpoints": [
+    {
+      "Route": "uploads/32916cc6-2cbc-48fc-a2f8-6b099bf85fe4.jpg",
+      "AssetFile": "C:\\Users\\Dell\\Documents\\DAPM_NHOM4\\backend\\backend\\wwwroot\\uploads\\32916cc6-2cbc-48fc-a2f8-6b099bf85fe4.jpg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "222189"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"rLjrN/ocz/n7mdSvXxNv26ep7Ca518LWWqA58GrpekY=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Mon, 01 Jun 2026 03:11:54 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=3600, must-revalidate"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-rLjrN/ocz/n7mdSvXxNv26ep7Ca518LWWqA58GrpekY="
+        }
+      ]
+    },
+    {
+      "Route": "uploads/32916cc6-2cbc-48fc-a2f8-6b099bf85fe4.wde2iclhnk.jpg",
+      "AssetFile": "C:\\Users\\Dell\\Documents\\DAPM_NHOM4\\backend\\backend\\wwwroot\\uploads\\32916cc6-2cbc-48fc-a2f8-6b099bf85fe4.jpg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "222189"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"rLjrN/ocz/n7mdSvXxNv26ep7Ca518LWWqA58GrpekY=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Mon, 01 Jun 2026 03:11:54 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "wde2iclhnk"
+        },
+        {
+          "Name": "label",
+          "Value": "uploads/32916cc6-2cbc-48fc-a2f8-6b099bf85fe4.jpg"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-rLjrN/ocz/n7mdSvXxNv26ep7Ca518LWWqA58GrpekY="
+        }
+      ]
+    }
+  ]
 }

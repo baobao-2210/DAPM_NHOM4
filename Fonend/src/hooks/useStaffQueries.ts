@@ -60,6 +60,14 @@ export const useStaffData = () => {
     enabled: staffId > 0,
   });
 
+  // ── Dashboard Metrics ──────────────────────────────────────────────────
+  const metricsQuery = useQuery({
+    queryKey: ['staffMetrics', staffId],
+    queryFn: () => staffApi.getDashboardMetrics(staffId),
+    enabled: staffId > 0,
+    refetchInterval: 30_000,
+  });
+
   // ── Mutations ────────────────────────────────────────────────────────────
   const actions = {
     // UC-21+22: Nhận đơn
@@ -136,6 +144,7 @@ export const useStaffData = () => {
     historyQuery,
     profileQuery,
     servicesQuery,
+    metricsQuery,
     actions,
   };
 };

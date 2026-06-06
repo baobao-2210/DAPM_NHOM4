@@ -1,14 +1,16 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, ClipboardList, Star, User, Wrench, HelpCircle, Truck } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, Star, User, Wrench, HelpCircle, Truck, DollarSign } from 'lucide-react';
 
 const SidebarStaff = () => {
   const location = useLocation();
 
   const navItems = [
     { name: 'Dashboard', path: '/staff', icon: LayoutDashboard, exact: true },
-    { name: 'Đơn được giao', path: '/staff/requests', icon: ClipboardList },
-    { name: 'Dịch vụ', path: '/staff/services', icon: Wrench },
+    { name: 'Đơn mới', path: '/staff/pending-requests', icon: ClipboardList },
+    { name: 'Đơn đang xử lý', path: '/staff/active-requests', icon: Truck },
+    { name: 'Lịch sử cứu hộ', path: '/staff/history', icon: ClipboardList },
     { name: 'Đánh giá', path: '/staff/reviews', icon: Star },
+    { name: 'Thu nhập', path: '/staff/income', icon: DollarSign },
     { name: 'Hồ sơ', path: '/staff/profile', icon: User },
   ];
 

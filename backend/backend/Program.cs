@@ -112,7 +112,7 @@ app.UseSwaggerUI();
 // Cho phép truy cập file tĩnh (Uploads)
 app.UseStaticFiles();
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection(); // Tắt tạm thời trong lúc dev để tránh lỗi CORS khi gọi từ localhost:5173
 
 app.UseCors("AllowReactApp");
 

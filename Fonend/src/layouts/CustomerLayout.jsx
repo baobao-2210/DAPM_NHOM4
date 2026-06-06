@@ -15,13 +15,15 @@ const CustomerLayout = () => {
   };
 
   const navItems = [
-    { name: 'Tổng quan', path: '/customer', icon: LayoutDashboard },
-    { name: 'Hồ sơ cá nhân', path: '/customer/profile', icon: User },
-    { name: 'Quản lý xe', path: '/customer/vehicles', icon: Car },
-    { name: 'Lịch sử cứu hộ', path: '/customer/rescue-requests', icon: ClipboardList },
+    { name: 'Dashboard', path: '/customer', icon: LayoutDashboard },
+    { name: 'Đặt cứu hộ', path: '/customer/rescue-requests/create', icon: Plus },
+    { name: 'Xe của tôi', path: '/customer/vehicles', icon: Car },
+    { name: 'Đơn cứu hộ', path: '/customer/active-requests', icon: Truck },
+    { name: 'Lịch sử cứu hộ', path: '/customer/history', icon: ClipboardList },
     { name: 'Thanh toán', path: '/customer/payments', icon: CreditCard },
     { name: 'Đánh giá', path: '/customer/reviews', icon: Star },
     { name: 'Khiếu nại', path: '/customer/complaints', icon: AlertTriangle },
+    { name: 'Hồ sơ', path: '/customer/profile', icon: User },
   ];
 
   const SidebarContent = () => (
@@ -70,13 +72,6 @@ const CustomerLayout = () => {
 
       {/* Actions */}
       <div className="p-4 border-t border-[#E2E8F0] space-y-3">
-        <Link
-          to="/customer/rescue-requests/create"
-          onClick={() => setSidebarOpen(false)}
-          className="flex items-center justify-center gap-2 w-full py-3 bg-[#FBBF24] text-[#0F172A] font-bold rounded-xl hover:bg-[#F59E0B] transition-colors shadow-sm"
-        >
-          <Plus className="w-5 h-5" /> Đặt cứu hộ
-        </Link>
         <button
           onClick={handleLogout}
           className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm text-[#64748B] font-medium hover:bg-[#FEF2F2] hover:text-[#EF4444] transition-colors"

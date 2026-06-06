@@ -6,11 +6,16 @@ import { useStaffData } from '../hooks/useStaffQueries';
 import { useAuth } from '../contexts/AuthContext';
 import axiosClient from '../api/axiosClient';
 
+import { LayoutDashboard, BellRing, Activity, History, Star, DollarSign, User, ShieldCheck } from 'lucide-react';
+
 const NAV_ITEMS = [
-  { to: '/partner',          label: 'Nhiệm vụ',      icon: TaskIcon,    exact: true },
-  { to: '/partner/messages', label: 'Tin nhắn',      icon: MessageIcon, exact: false },
-  { to: '/partner/history',  label: 'Lịch sử',       icon: HistoryIcon, exact: false },
-  { to: '/partner/services', label: 'Dịch vụ của tôi',icon: ServiceIcon, exact: false },
+  { to: '/partner',          label: 'Dashboard',         icon: LayoutDashboard, exact: true },
+  { to: '/partner/pending',  label: 'Đơn mới',           icon: BellRing,        exact: false },
+  { to: '/partner/active',   label: 'Đơn đang xử lý',    icon: Activity,        exact: false },
+  { to: '/partner/history',  label: 'Lịch sử cứu hộ',    icon: History,         exact: false },
+  { to: '/partner/reviews',  label: 'Đánh giá',          icon: Star,            exact: false },
+  { to: '/partner/earnings', label: 'Thu nhập',          icon: DollarSign,      exact: false },
+  { to: '/partner/profile',  label: 'Hồ sơ',             icon: User,            exact: false },
 ];
 
 export default function StaffLayout() {
@@ -121,9 +126,14 @@ export default function StaffLayout() {
                 <>
                   <span className={isActive ? 'text-[#1e3a8a]' : 'text-blue-300'}><Icon /></span>
                   <span className="flex-1">{label}</span>
-                  {to === '/partner' && (pendingCount > 0 || hasActive) && (
-                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${hasActive ? 'bg-yellow-400 text-yellow-900' : 'bg-red-500 text-white shadow-sm'}`}>
-                      {hasActive ? 'ĐANG BẬN' : pendingCount > 9 ? '9+' : pendingCount}
+                  {to === '/partner/pending' && pendingCount > 0 && (
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-red-500 text-white shadow-sm">
+                      {pendingCount > 9 ? '9+' : pendingCount}
+                    </span>
+                  )}
+                  {to === '/partner/active' && hasActive && (
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-yellow-400 text-yellow-900">
+                      1
                     </span>
                   )}
                 </>

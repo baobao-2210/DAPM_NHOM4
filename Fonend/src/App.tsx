@@ -25,6 +25,8 @@ import RegisterPage from './pages/guest/RegisterPage';
 
 // ── Staff / Nhân viên cứu hộ ──────────────────────────────────────────────────
 import StaffDashboard     from './pages/staff/Dashboard';
+import StaffPending       from './pages/staff/PendingRequests';
+import StaffActive        from './pages/staff/ActiveRequests';
 import StaffRequestDetail from './pages/staff/RequestDetail';
 import StaffChat          from './pages/staff/Chat';
 import StaffHistory       from './pages/staff/History';
@@ -95,25 +97,20 @@ export default function App() {
 
           <Route element={<StaffPrivateRoute />}>
             <Route path="/partner" element={<StaffLayout />}>
-              {/* UC-21: Trang chủ — đơn chờ + đang xử lý */}
               <Route index element={<StaffDashboard />} />
-
-              {/* UC-22/23/24: Chi tiết + cập nhật trạng thái + hoàn thành */}
+              <Route path="pending" element={<StaffPending />} />
+              <Route path="active" element={<StaffActive />} />
+              
+              {/* Other pages */}
               <Route path="yeucau/:id" element={<StaffRequestDetail />} />
-
-              {/* UC-25: Chat với khách hàng & Inbox */}
               <Route path="messages" element={<StaffChat />} />
               <Route path="chat/:id" element={<StaffChat />} />
-
-              {/* UC-26: Lịch cứu hộ theo tháng */}
               <Route path="history" element={<StaffHistory />} />
-
-              {/* UC-27: Cập nhật thông tin cá nhân */}
               <Route path="profile" element={<StaffProfile />} />
-
-              {/* UC-28: Cập nhật dịch vụ cung cấp */}
               <Route path="services" element={<StaffServices />} />
               <Route path="notifications" element={<StaffNotifications />} />
+              <Route path="earnings" element={<PlaceholderPage title="Thu nhập" />} />
+              <Route path="reviews" element={<PlaceholderPage title="Đánh giá" />} />
             </Route>
           </Route>
 

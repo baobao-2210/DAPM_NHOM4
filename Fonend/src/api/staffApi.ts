@@ -2,7 +2,7 @@
 import axiosClient from './axiosClient';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-export type SubStatus = 'DangDen' | 'DangSua' | 'DangKiemTra';
+export type SubStatus = 'DaNhan' | 'DangDen' | 'DaDen' | 'DangSua';
 
 export interface YeuCauItem {
   id: number;
@@ -169,4 +169,8 @@ export const staffApi = {
     axiosClient.put<any, { message: string; canhBao?: string }>(
       `/NhanVien/${staffId}/services`, { services }
     ),
+
+  // Dashboard Metrics
+  getDashboardMetrics: (staffId: number) =>
+    axiosClient.get(`/NhanVien/${staffId}/dashboard-metrics`).then(res => res.data),
 };

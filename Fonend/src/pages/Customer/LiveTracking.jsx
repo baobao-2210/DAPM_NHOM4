@@ -39,36 +39,79 @@ const MapBounds = ({ customerPos, staffPos }) => {
 const LiveTracking = () => {
   const { requestId } = useParams();
   
-  // Mock data
-  const customerPos = [16.0611, 108.2272]; // Da Nang (Cầu Rồng)
-  const initialStaffPos = [16.0544, 108.2022]; // Da Nang center
-  
-  const [staffPos, setStaffPos] = useState(initialStaffPos);
+  const [reqDetail, setReqDetail] = useState(null);
+  const [customerPos, setCustomerPos] = useState([10.762622, 106.660172]); // Default HCMC
+  const [staffPos, setStaffPos] = useState([10.75, 106.65]); // Default starting point
   const [eta, setEta] = useState(15);
   const [distance, setDistance] = useState(3.2);
-  const [reqDetail, setReqDetail] = useState(null);
 
   // Fetch request data
   useEffect(() => {
     const fetchReq = async () => {
       try {
         const res = await customerApi.getRequestDetail(requestId);
-        setReqDetail(res.data?.data || res.data);
+        const data = res.data?.data || res.data;
+        setReqDetail(data);
+
+        // Try parsing location if it looks like address | lat,lng
+        if (data?.location && typeof data.location === 'string') {
+          let newLat = 10.762622, newLng = 106.660172;
+          let parsed = false;
+          if (data.location.includes('|')) {
+            const coordsStr = data.location.split('|')[1];
+            const coords = coordsStr.split(',');
+            if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
+              newLat = parseFloat(coords[0].trim());
+              newLng = parseFloat(coords[1].trim());
+              parsed = true;
+            }
+          } else {
+            const parts = data.location.split(',');
+            if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+              newLat = parseFloat(parts[0].trim());
+              newLng = parseFloat(parts[1].trim());
+              parsed = true;
+            }
+          }
+          
+          if (parsed) {
+            setCustomerPos([newLat, newLng]);
+            // If staffPos is still at the default HCMC coordinate, move it to be 2-3km away from the actual incident
+            setStaffPos(prev => prev[0] === 10.75 ? [newLat - 0.015, newLng - 0.015] : prev);
+          }
+        }
       } catch (err) {
         console.error('Failed to fetch request detail', err);
       }
     };
     fetchReq();
-    const pollInterval = setInterval(fetchReq, 10000); // Poll every 10s
+    const pollInterval = setInterval(fetchReq, 5000); // Poll every 5s
     return () => clearInterval(pollInterval);
   }, [requestId]);
 
-  // Simulate staff moving
+  // Simulate staff moving based on real status
   useEffect(() => {
+    if (!reqDetail) return;
+    
+    // Exact status mapping
+    let exactStatus = reqDetail.status;
+    if (exactStatus === 'DangXuLy' && reqDetail.subStatus) {
+      exactStatus = reqDetail.subStatus;
+    }
+
+    // Stop moving if arrived or completed
+    if (['DaDen', 'DangSua', 'HoanThanh', 'DaHuy'].includes(exactStatus)) {
+      setStaffPos(customerPos);
+      setEta(0);
+      setDistance(0);
+      return;
+    }
+
+    // Move towards customer if "DangDen"
     const interval = setInterval(() => {
       setStaffPos(prev => {
-        const newLat = prev[0] + (customerPos[0] - prev[0]) * 0.05;
-        const newLng = prev[1] + (customerPos[1] - prev[1]) * 0.05;
+        const newLat = prev[0] + (customerPos[0] - prev[0]) * 0.1;
+        const newLng = prev[1] + (customerPos[1] - prev[1]) * 0.1;
         return [newLat, newLng];
       });
       setEta(prev => Math.max(1, prev - 1));
@@ -76,7 +119,7 @@ const LiveTracking = () => {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [reqDetail, customerPos]);
 
   return (
     <div className="relative h-[calc(100vh-64px)] -m-6 lg:-m-8">
@@ -154,7 +197,7 @@ const LiveTracking = () => {
             <div className="flex items-center gap-3 mb-4 bg-[#F8FAFC] p-3 rounded-xl border border-[#F1F5F9]">
               <MapPin className="w-5 h-5 text-[#EF4444] shrink-0" />
               <p className="text-sm text-[#0F172A] font-medium line-clamp-1">
-                {reqDetail?.address || 'Cầu Rồng, Q. Hải Châu, Đà Nẵng'}
+                {reqDetail?.location ? reqDetail.location.split('|')[0].trim() : 'Đang lấy vị trí...'}
               </p>
             </div>
 

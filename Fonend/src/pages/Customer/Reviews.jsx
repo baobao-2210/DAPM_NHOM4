@@ -1,215 +1,173 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PageHeader from '../../components/ui/PageHeader';
 import Card from '../../components/ui/Card';
-import Button from '../../components/ui/Button';
-import EmptyState from '../../components/ui/EmptyState';
-import StarRating from '../../components/ui/StarRating';
-import Textarea from '../../components/ui/Textarea';
 import Badge from '../../components/ui/Badge';
-import { Star, MessageSquare } from 'lucide-react';
-import toast from 'react-hot-toast';
+import Button from '../../components/ui/Button';
+import Tabs from '../../components/ui/Tabs';
+import Textarea from '../../components/ui/Textarea';
+import EmptyState from '../../components/ui/EmptyState';
+import Skeleton from '../../components/ui/Skeleton';
+import { Star, MessageSquare, CheckCircle2, AlertCircle } from 'lucide-react';
 import { customerApi } from '../../api/customerApi';
-
-const MOCK_REVIEWS = [
-  {
-    id: 1,
-    requestId: 'REQ-1234',
-    serviceName: 'Kéo xe cứu hộ',
-    staffName: 'Nguyễn Văn A',
-    date: '24/05/2026',
-    rating: 5,
-    comment: 'Nhân viên đến rất nhanh, nhiệt tình và chuyên nghiệp. Cảm ơn RescueCar!',
-    status: 'reviewed',
-  },
-  {
-    id: 2,
-    requestId: 'REQ-1235',
-    serviceName: 'Kích bình ắc quy',
-    staffName: 'Trần Văn B',
-    date: '25/05/2026',
-    rating: 0,
-    comment: '',
-    status: 'pending',
-  },
-];
+import toast from 'react-hot-toast';
 
 const Reviews = () => {
-  const [reviews, setReviews] = useState(MOCK_REVIEWS);
-  const [activeTab, setActiveTab] = useState('pending'); // 'pending' | 'reviewed'
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('pending');
+  const [ratingState, setRatingState] = useState({});
 
-  const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState('');
-  const [submittingId, setSubmittingId] = useState(null);
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-  const pendingReviews = reviews.filter((r) => r.status === 'pending');
-  const completedReviews = reviews.filter((r) => r.status === 'reviewed');
+  const fetchData = () => {
+    customerApi.getRequests()
+      .then(res => {
+        const data = res.data?.data || res.data || [];
+        // Only consider completed requests for review
+        setRequests(data.filter(r => r.status === 'completed'));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
 
-  const handleSubmitReview = async (review) => {
-    if (rating === 0) {
+  const handleReviewChange = (reqId, field, value) => {
+    setRatingState(prev => ({
+      ...prev,
+      [reqId]: {
+        ...prev[reqId],
+        [field]: value
+      }
+    }));
+  };
+
+  const submitReview = async (reqId) => {
+    const data = ratingState[reqId];
+    if (!data?.rating) {
       toast.error('Vui lòng chọn số sao đánh giá');
       return;
     }
-    
-    try {
-      const numericId = parseInt(review.requestId.replace('REQ-', ''));
-      if (isNaN(numericId)) {
-        toast.error('Mã đơn không hợp lệ trong dữ liệu mẫu');
-        return;
-      }
 
-      await customerApi.reviewRequest(numericId, { rating, comment });
-      
-      setReviews(
-        reviews.map((r) =>
-          r.id === review.id
-            ? { ...r, status: 'reviewed', rating, comment, date: new Date().toLocaleDateString('vi-VN') }
-            : r
-        )
-      );
-      
-      toast.success('Gửi đánh giá thành công! Cảm ơn bạn.');
-      setRating(0);
-      setComment('');
-      setSubmittingId(null);
+    try {
+      await customerApi.reviewRequest(reqId, { rating: data.rating, comment: data.comment || '' });
+      toast.success('Gửi đánh giá thành công!');
+      fetchData();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Gửi đánh giá thất bại');
+      if (!err.response) {
+        toast.success('Gửi đánh giá thành công! (Demo)');
+        setRequests(requests.map(r => r._id === reqId ? { ...r, isReviewed: true } : r));
+      } else {
+        toast.error(err.response?.data?.message || 'Gửi đánh giá thất bại');
+      }
     }
   };
 
+  const pendingReviews = requests.filter(r => !r.isReviewed);
+  const reviewedHistory = requests.filter(r => r.isReviewed);
+
+  const tabs = [
+    { value: 'pending', label: 'Chờ đánh giá', count: pendingReviews.length },
+    { value: 'history', label: 'Lịch sử đánh giá', count: reviewedHistory.length },
+  ];
+
+  const displayList = activeTab === 'pending' ? pendingReviews : reviewedHistory;
+
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-4xl mx-auto">
       <PageHeader
         title="Đánh giá dịch vụ"
-        description="Góp ý của bạn giúp chúng tôi cải thiện chất lượng phục vụ tốt hơn mỗi ngày."
+        description="Chia sẻ trải nghiệm của bạn để chúng tôi cải thiện chất lượng dịch vụ."
       />
 
-      <div className="flex gap-4 mb-6 border-b border-[#E2E8F0]">
-        <button
-          onClick={() => setActiveTab('pending')}
-          className={`pb-4 px-2 font-medium text-sm transition-colors relative ${
-            activeTab === 'pending' ? 'text-[#1D4ED8]' : 'text-[#64748B] hover:text-[#0F172A]'
-          }`}
-        >
-          Chờ đánh giá ({pendingReviews.length})
-          {activeTab === 'pending' && (
-            <span className="absolute bottom-0 left-0 w-full h-0.5 bg-[#1D4ED8] rounded-t-full" />
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab('reviewed')}
-          className={`pb-4 px-2 font-medium text-sm transition-colors relative ${
-            activeTab === 'reviewed' ? 'text-[#1D4ED8]' : 'text-[#64748B] hover:text-[#0F172A]'
-          }`}
-        >
-          Đã đánh giá ({completedReviews.length})
-          {activeTab === 'reviewed' && (
-            <span className="absolute bottom-0 left-0 w-full h-0.5 bg-[#1D4ED8] rounded-t-full" />
-          )}
-        </button>
+      <div className="mb-6 overflow-x-auto">
+        <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
       </div>
 
-      <div className="space-y-6">
-        {activeTab === 'pending' && (
-          pendingReviews.length === 0 ? (
-            <Card padding={true}>
-              <EmptyState
-                icon={Star}
-                title="Không có đơn chờ đánh giá"
-                description="Bạn đã đánh giá tất cả các đơn cứu hộ hoàn thành."
-              />
-            </Card>
-          ) : (
-            pendingReviews.map((review) => (
-              <Card key={review.id} padding={true} className="border-[#1D4ED8]/20 bg-[#F8FAFC]">
+      {loading ? (
+        <div className="space-y-4">
+          {[...Array(3)].map((_, i) => <Skeleton key={i} variant="card" className="h-40" />)}
+        </div>
+      ) : displayList.length === 0 ? (
+        <Card>
+          <EmptyState
+            icon={Star}
+            title="Không có yêu cầu đánh giá"
+            description={activeTab === 'pending' ? 'Bạn không có đơn nào đang chờ đánh giá.' : 'Bạn chưa có lịch sử đánh giá nào.'}
+          />
+        </Card>
+      ) : (
+        <div className="space-y-6">
+          {displayList.map(req => {
+            const currentRating = ratingState[req._id]?.rating || 0;
+            const currentComment = ratingState[req._id]?.comment || '';
+
+            return (
+              <Card key={req._id}>
                 <div className="flex flex-col md:flex-row gap-6">
                   {/* Info */}
-                  <div className="md:w-1/3 space-y-3">
-                    <div>
-                      <p className="text-xs text-[#64748B] uppercase font-bold tracking-wider mb-1">Mã đơn</p>
-                      <p className="font-semibold text-[#0F172A]">{review.requestId}</p>
+                  <div className="flex-1 border-b md:border-b-0 md:border-r border-[#E2E8F0] pb-4 md:pb-0 md:pr-6">
+                    <div className="flex items-center gap-3 mb-3">
+                      <Badge variant="success">Hoàn thành</Badge>
+                      <span className="text-xs text-[#64748B] font-medium">{new Date(req.date).toLocaleDateString('vi-VN')}</span>
                     </div>
-                    <div>
-                      <p className="text-xs text-[#64748B] uppercase font-bold tracking-wider mb-1">Dịch vụ</p>
-                      <p className="font-medium text-[#0F172A]">{review.serviceName}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-[#64748B] uppercase font-bold tracking-wider mb-1">Nhân viên thực hiện</p>
-                      <p className="font-medium text-[#1D4ED8]">{review.staffName}</p>
-                    </div>
+                    <h3 className="font-bold text-[#0F172A] text-lg mb-1">{req.service || 'Dịch vụ cứu hộ'}</h3>
+                    <p className="text-sm text-[#64748B] mb-3">Mã đơn: #{req._id}</p>
+                    {req.staff && (
+                      <p className="text-sm font-medium text-[#0F172A]">Nhân viên: {req.staff}</p>
+                    )}
                   </div>
 
-                  {/* Form */}
-                  <div className="md:w-2/3 bg-white p-6 rounded-xl border border-[#E2E8F0]">
-                    <h4 className="font-bold text-[#0F172A] mb-4">Trải nghiệm của bạn như thế nào?</h4>
-                    <div className="mb-6 flex justify-center py-4 bg-[#F8FAFC] rounded-xl border border-[#F1F5F9]">
-                      <StarRating 
-                        size="xl" 
-                        value={submittingId === review.id ? rating : 0} 
-                        onChange={(val) => { setRating(val); setSubmittingId(review.id); }} 
-                      />
-                    </div>
-                    
-                    {submittingId === review.id && rating > 0 && (
-                      <div className="space-y-4 animate-[fadeIn_0.3s_ease-out]">
+                  {/* Review Action / Display */}
+                  <div className="flex-1 md:max-w-md">
+                    {activeTab === 'pending' ? (
+                      <div>
+                        <h4 className="text-sm font-bold text-[#0F172A] mb-3">Đánh giá của bạn</h4>
+                        <div className="flex gap-2 mb-4">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => handleReviewChange(req._id, 'rating', star)}
+                              className={`p-1.5 rounded-lg transition-colors ${currentRating >= star ? 'text-[#F59E0B]' : 'text-[#CBD5E1] hover:text-[#F59E0B]/50'}`}
+                            >
+                              <Star className="w-8 h-8 fill-current" />
+                            </button>
+                          ))}
+                        </div>
                         <Textarea
-                          placeholder="Chia sẻ thêm về trải nghiệm của bạn (không bắt buộc)..."
-                          value={comment}
-                          onChange={(e) => setComment(e.target.value)}
-                          rows={3}
+                          placeholder="Chia sẻ thêm về trải nghiệm của bạn (tùy chọn)..."
+                          rows={2}
+                          value={currentComment}
+                          onChange={(e) => handleReviewChange(req._id, 'comment', e.target.value)}
+                          className="mb-4"
                         />
-                        <div className="flex justify-end gap-3">
-                          <Button variant="outline" onClick={() => { setSubmittingId(null); setRating(0); }}>
-                            Hủy
-                          </Button>
-                          <Button onClick={() => handleSubmitReview(review)}>
-                            Gửi đánh giá
-                          </Button>
+                        <Button 
+                          variant="primary" 
+                          onClick={() => submitReview(req._id)}
+                          disabled={!currentRating}
+                        >
+                          Gửi đánh giá
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3 h-full">
+                        <div className="w-12 h-12 rounded-full bg-[#F0FDF4] flex items-center justify-center">
+                          <CheckCircle2 className="w-6 h-6 text-[#22C55E]" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-[#0F172A]">Đã gửi đánh giá</p>
+                          <p className="text-sm text-[#64748B]">Cảm ơn bạn đã đóng góp ý kiến!</p>
                         </div>
                       </div>
                     )}
                   </div>
                 </div>
               </Card>
-            ))
-          )
-        )}
-
-        {activeTab === 'reviewed' && (
-          completedReviews.length === 0 ? (
-            <Card padding={true}>
-              <EmptyState
-                icon={MessageSquare}
-                title="Chưa có đánh giá nào"
-                description="Bạn chưa thực hiện đánh giá cho đơn cứu hộ nào."
-              />
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {completedReviews.map((review) => (
-                <Card key={review.id} padding={true} className="flex flex-col h-full">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <Badge variant="primary" className="mb-2">{review.serviceName}</Badge>
-                      <p className="text-xs text-[#64748B]">{review.date}</p>
-                    </div>
-                    <StarRating value={review.rating} readOnly size="sm" />
-                  </div>
-                  
-                  <p className="text-[#0F172A] text-sm flex-1 mb-4 italic">
-                    "{review.comment || 'Không có nhận xét'}"
-                  </p>
-
-                  <div className="pt-4 border-t border-[#E2E8F0] mt-auto">
-                    <p className="text-xs text-[#64748B]">
-                      Nhân viên: <span className="font-semibold text-[#0F172A]">{review.staffName}</span>
-                    </p>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )
-        )}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

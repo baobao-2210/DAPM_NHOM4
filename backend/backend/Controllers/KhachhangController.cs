@@ -182,9 +182,11 @@ namespace backend.Controllers
                     _id = y.IdYeuCau,
                     service = y.IdDichVuNavigation.TenDichVu,
                     date = y.NgayTao,
-                    status = y.TrangThaiHienTai == "HoanThanh" ? "completed" : (y.TrangThaiHienTai == "DangXuLy" ? "in-progress" : "pending"),
+                    status = y.TrangThaiHienTai == "HoanThanh" ? "completed" : (y.TrangThaiHienTai == "DaHuy" ? "cancelled" : (y.TrangThaiHienTai == "DangXuLy" ? "in-progress" : "pending")),
                     total = y.ChiPhiThucTe > 0 ? y.ChiPhiThucTe : y.ChiPhiDuKien,
-                    staff = y.IdNhanVienNavigation != null ? y.IdNhanVienNavigation.IdTaiKhoanNavigation.HoTen : "Đang tìm..."
+                    staff = y.IdNhanVienNavigation != null ? y.IdNhanVienNavigation.IdTaiKhoanNavigation.HoTen : "Đang tìm...",
+                    isPaid = _context.Thanhtoans.Any(t => t.IdYeuCau == y.IdYeuCau && t.TrangThai == "ThanhCong"),
+                    isReviewed = _context.Danhgia.Any(d => d.IdYeuCau == y.IdYeuCau)
                 })
                 .ToListAsync();
 
@@ -211,10 +213,12 @@ namespace backend.Controllers
                 _id = yc.IdYeuCau,
                 service = yc.IdDichVuNavigation.TenDichVu,
                 date = yc.NgayTao,
-                status = yc.TrangThaiHienTai == "HoanThanh" ? "completed" : (yc.TrangThaiHienTai == "DangXuLy" ? "in-progress" : "pending"),
+                status = yc.TrangThaiHienTai, // Trả về raw status để frontend xử lý (TiepNhan, DaNhan, DangDen, DaDen, DangSua, HoanThanh, DaHuy)
+                subStatus = _context.LichSuTrangThaiYeuCaus.Where(l => l.IdYeuCau == yc.IdYeuCau).OrderByDescending(l => l.ThoiGianCapNhat).Select(l => l.TrangThai).FirstOrDefault(),
                 total = yc.ChiPhiThucTe > 0 ? yc.ChiPhiThucTe : yc.ChiPhiDuKien,
                 location = yc.NoiSuCo,
                 description = yc.MoTaSuCo,
+                imageUrl = yc.ImageUrl,
                 vehicle = $"{yc.IdXeNavigation.HangXe} {yc.IdXeNavigation.DongXe} - {yc.IdXeNavigation.BienSo}",
                 staff = staff
             } });
@@ -223,24 +227,58 @@ namespace backend.Controllers
         [HttpPost("rescue-requests")]
         public async Task<IActionResult> CreateRescueRequest([FromBody] RescueRequestDto dto)
         {
-            int khId = await GetKhachHangId(GetCurrentUserId());
-            
-            var req = new YeucauCuuho
+            try
             {
-                IdKhachHang = khId,
-                IdXe = dto.VehicleId,
-                IdDichVu = dto.ServiceId,
-                IdPhuongXa = 1, // Fix cứng cho Phường Bến Nghé
-                NoiSuCo = dto.Location,
-                MoTaSuCo = dto.Description,
-                TrangThaiHienTai = "TiepNhan",
-                ChiPhiDuKien = 0,
-                NgayTao = DateTime.Now
-            };
+                int khId = await GetKhachHangId(GetCurrentUserId());
+                
+                var req = new YeucauCuuho
+                {
+                    IdKhachHang = khId,
+                    IdXe = dto.VehicleId,
+                    IdDichVu = dto.ServiceId,
+                    IdPhuongXa = 1, // Fix cứng cho Phường Bến Nghé
+                    NoiSuCo = dto.Location,
+                    MoTaSuCo = dto.Description,
+                    ImageUrl = dto.ImageUrl,
+                    TrangThaiHienTai = "TiepNhan",
+                    ChiPhiDuKien = 0,
+                    NgayTao = DateTime.Now
+                };
 
-            _context.YeucauCuuhos.Add(req);
-            await _context.SaveChangesAsync();
-            return Ok(new { data = new { _id = req.IdYeuCau } });
+                _context.YeucauCuuhos.Add(req);
+                await _context.SaveChangesAsync();
+
+                // Notify eligible staff (bỏ điều kiện phường xã để dễ test)
+                var eligibleStaffAccountIds = await _context.NhanvienCuuhos
+                    .Where(nv => nv.TrangThaiNhanViec == true &&
+                                 nv.IdDichVus.Any(d => d.IdDichVu == dto.ServiceId))
+                    .Select(nv => nv.IdTaiKhoan)
+                    .ToListAsync();
+
+                foreach (var accId in eligibleStaffAccountIds)
+                {
+                    _context.Thongbaos.Add(new Thongbao
+                    {
+                        IdTaiKhoanNhan = accId,
+                        TieuDe = "Có yêu cầu cứu hộ mới",
+                        NoiDung = "Một yêu cầu cứu hộ mới vừa được tạo trong khu vực của bạn. Hãy kiểm tra ngay!",
+                        Loai = "CongViec",
+                        RefType = "YeuCau",
+                        ThoiGian = DateTime.Now
+                    });
+                }
+
+                if (eligibleStaffAccountIds.Any())
+                {
+                    await _context.SaveChangesAsync();
+                }
+
+                return Ok(new { data = new { _id = req.IdYeuCau } });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message + (ex.InnerException != null ? " - " + ex.InnerException.Message : "") });
+            }
         }
 
         // ==========================================
@@ -342,6 +380,7 @@ namespace backend.Controllers
         public int ServiceId { get; set; }
         public string Location { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
+        public string? ImageUrl { get; set; }
     }
 
     public class PaymentDto

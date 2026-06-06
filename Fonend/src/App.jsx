@@ -27,7 +27,8 @@ import CustomerDashboard from './pages/customer/CustomerDashboard';
 import Profile from './pages/customer/Profile';
 import MyVehicles from './pages/customer/MyVehicles';
 import CreateRescueRequest from './pages/customer/CreateRescueRequest';
-import RescueRequestHistory from './pages/customer/RescueRequestHistory';
+import CustomerActiveRequests from './pages/customer/ActiveRequests';
+import CustomerHistory from './pages/customer/History';
 import RescueRequestDetail from './pages/customer/RescueRequestDetail';
 import Reviews from './pages/customer/Reviews';
 import Payments from './pages/customer/Payments';
@@ -36,11 +37,12 @@ import LiveTracking from './pages/customer/LiveTracking';
 
 // Staff pages
 import StaffDashboard from './pages/staff/StaffDashboard';
-import AssignedRequests from './pages/staff/AssignedRequests';
-import UpdateRequestStatus from './pages/staff/UpdateRequestStatus';
+import PendingRequests from './pages/staff/PendingRequests';
+import StaffActiveRequests from './pages/staff/ActiveRequests';
+import StaffHistory from './pages/staff/History';
+import StaffIncome from './pages/staff/StaffIncome';
 import StaffProfile from './pages/staff/StaffProfile';
 import StaffReviews from './pages/staff/StaffReviews';
-import StaffServices from './pages/staff/StaffServices'; // Nhớ trỏ đúng đường dẫn thư mục của bạn
 import StaffNotifications from './pages/staff/StaffNotifications';
 
 // Admin pages
@@ -103,7 +105,9 @@ function App() {
           <Route index element={<CustomerDashboard />} />
           <Route path="profile" element={<Profile />} />
           <Route path="vehicles" element={<MyVehicles />} />
-          <Route path="rescue-requests" element={<RescueRequestHistory />} />
+          <Route path="rescue-requests" element={<CustomerHistory />} />
+          <Route path="active-requests" element={<CustomerActiveRequests />} />
+          <Route path="history" element={<CustomerHistory />} />
           <Route path="rescue-requests/create" element={<CreateRescueRequest />} />
           <Route path="rescue-requests/:id" element={<RescueRequestDetail />} />
           <Route path="notifications" element={<Notifications />} />
@@ -126,12 +130,12 @@ function App() {
           }
         >
           <Route index element={<StaffDashboard />} />
-          <Route path="requests" element={<AssignedRequests />} />
-          <Route path="requests/:id" element={<UpdateRequestStatus />} />
-          <Route path="notifications" element={<Notifications />} />
+          <Route path="pending-requests" element={<PendingRequests />} />
+          <Route path="active-requests" element={<StaffActiveRequests />} />
+          <Route path="history" element={<StaffHistory />} />
+          <Route path="income" element={<StaffIncome />} />
           <Route path="profile" element={<StaffProfile />} />
           <Route path="reviews" element={<StaffReviews />} />
-          <Route path="services" element={<StaffServices />} />
           <Route path="notifications" element={<StaffNotifications />} />
           <Route path="chat/:requestId" element={<SharedChat />} />
         </Route>

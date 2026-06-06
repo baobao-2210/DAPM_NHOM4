@@ -19,23 +19,20 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Giả lập backend tạo JWT Token (Base64 encoding đơn giản cho header và payload)
-const generateMockToken = (user: User) => {
-  const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-  const payload = btoa(JSON.stringify({
-    ...user,
-    exp: Math.floor(Date.now() / 1000) + (60 * 60) // Hết hạn sau 1 giờ
-  }));
-  const signature = "mock_signature_for_testing";
-  return `${header}.${payload}.${signature}`;
-};
+import axiosClient from '../api/axiosClient';
 
-// Hàm hỗ trợ bóc tách dữ liệu từ JWT (Hỗ trợ khi sau này ráp API thật)
+// Hàm hỗ trợ bóc tách dữ liệu từ JWT
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const extractUserInfoFromToken = (decoded: any): User => {
+  let mappedRole = decoded.role || decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || 'staff';
+  mappedRole = mappedRole.toLowerCase();
+  if (mappedRole === 'nhanvien') mappedRole = 'staff';
+  if (mappedRole === 'khachhang') mappedRole = 'customer';
+
   return {
-    id: decoded.id || decoded.nameid || decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] || '',
+    id: decoded.id || decoded.sub || decoded.nameid || decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] || '',
     email: decoded.email || decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] || '',
-    role: decoded.role || decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || 'staff'
+    role: mappedRole
   };
 };
 
@@ -45,14 +42,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const logout = () => {
+    localStorage.removeItem('access_token');
+    setToken(null);
+    setUser(null);
+    setRole(null);
+  };
+
   useEffect(() => {
     // Khi khởi động app, đọc token từ localStorage
     const savedToken = localStorage.getItem('access_token');
     if (savedToken) {
       try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const decoded: any = jwtDecode(savedToken);
         // Kiểm tra xem token đã hết hạn chưa
         if (decoded.exp && decoded.exp * 1000 < Date.now()) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           logout();
         } else {
           const userInfo = extractUserInfoFromToken(decoded);
@@ -69,38 +75,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (emailOrPhone: string, password: string) => {
-    // Giả lập độ trễ mạng
-    await new Promise(resolve => setTimeout(resolve, 800));
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const response: any = await axiosClient.post('/Auth/login', {
+        email: emailOrPhone,
+        password: password
+      });
 
-    let mockUser: User | null = null;
-    if (emailOrPhone === 'admin' && password === 'admin123') {
-      mockUser = { id: 'admin-1', email: 'admin@rescue.vn', role: 'admin' };
-    } 
-    else if (emailOrPhone === 'customer' && password === 'customer123') {
-      mockUser = { id: 'cust-1', email: 'customer@test.com', role: 'customer' };
+      if (response && response.token && response.user) {
+        localStorage.setItem('access_token', response.token);
+        setToken(response.token);
+
+        let mappedRole = response.user.role.toLowerCase();
+        if (mappedRole === 'nhanvien') mappedRole = 'staff';
+        if (mappedRole === 'khachhang') mappedRole = 'customer';
+
+        const userInfo: User = {
+          id: response.user._id.toString(),
+          email: response.user.email,
+          role: mappedRole
+        };
+
+        setUser(userInfo);
+        setRole(mappedRole);
+        return { success: true, message: 'Đăng nhập thành công' };
+      }
+      return { success: false, message: 'Tài khoản hoặc mật khẩu không đúng' };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      console.error("Login Error:", err);
+      // Xử lý lỗi trả về từ API
+      const errorMessage = err?.response?.data?.message || `Lỗi kết nối Backend: ${err.message}`;
+      return { success: false, message: errorMessage };
     }
-    else if (emailOrPhone === 'staff1' && password === 'staff123') {
-      // ID '2' để gọi xuống Backend C# lấy dữ liệu. Role 'staff' để Router chuyển đúng trang.
-      mockUser = { id: '2', email: 'staff1@rescue.vn', role: 'staff' }; 
-    }
-
-    if (mockUser) {
-      const jwtToken = generateMockToken(mockUser);
-      localStorage.setItem('access_token', jwtToken);
-      setToken(jwtToken);
-      setUser(mockUser);
-      setRole(mockUser.role);
-      return { success: true, message: 'Đăng nhập thành công' };
-    }
-
-    return { success: false, message: 'Tài khoản hoặc mật khẩu không đúng' };
-  };
-
-  const logout = () => {
-    localStorage.removeItem('access_token');
-    setToken(null);
-    setUser(null);
-    setRole(null);
   };
 
   return (
@@ -110,6 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {

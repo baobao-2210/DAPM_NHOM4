@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace backend.Models;
@@ -36,6 +36,8 @@ public partial class YeucauCuuho
     public DateTime? NgayHuy { get; set; }
 
     public string? LyDoHuy { get; set; }
+
+    public string? ImageUrl { get; set; }
 
     public virtual ICollection<Danhgium> Danhgia { get; set; } = new List<Danhgium>();
 

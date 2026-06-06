@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using backend.Models;
 
@@ -177,6 +177,72 @@ namespace backend.Controllers
 
             await _context.SaveChangesAsync();
             return Ok(new { message = "Cập nhật thông tin thành công" });
+        }
+
+        // GET /api/NhanVien/{id}/dashboard-metrics
+        [HttpGet("{id}/dashboard-metrics")]
+        public async Task<IActionResult> GetDashboardMetrics(int id)
+        {
+            var now = DateTime.Now;
+            var today = now.Date;
+
+            // Load nv to get IdDichVus for pending requests
+            var nv = await _context.NhanvienCuuhos.Include(n => n.IdDichVus).FirstOrDefaultAsync(n => n.IdNhanVien == id);
+            if (nv == null) return NotFound(new { message = "Không tìm thấy nhân viên" });
+
+            // Base queries
+            var yeuCaus = _context.YeucauCuuhos.Where(y => y.IdNhanVien == id);
+            
+            // 1. Tổng đơn hôm nay
+            int tongDonHomNay = await yeuCaus.CountAsync(y => y.NgayTao.HasValue && y.NgayTao.Value.Date == today);
+            
+            // 2. Đơn đang xử lý
+            int donDangXuLy = await yeuCaus.CountAsync(y => y.TrangThaiHienTai == "DangXuLy");
+            
+            // 3. Đơn hoàn thành
+            int donHoanThanh = await yeuCaus.CountAsync(y => y.TrangThaiHienTai == "HoanThanh");
+            
+            // 4. Thu nhập hôm nay
+            decimal thuNhapHomNay = await yeuCaus
+                .Where(y => y.TrangThaiHienTai == "HoanThanh" && y.NgayHoanThanh.HasValue && y.NgayHoanThanh.Value.Date == today)
+                .SumAsync(y => y.ChiPhiThucTe ?? 0);
+                
+            // 5. Thu nhập tháng
+            decimal thuNhapThang = await yeuCaus
+                .Where(y => y.TrangThaiHienTai == "HoanThanh" && y.NgayHoanThanh.HasValue && y.NgayHoanThanh.Value.Month == now.Month && y.NgayHoanThanh.Value.Year == now.Year)
+                .SumAsync(y => y.ChiPhiThucTe ?? 0);
+
+            // 5.1 Tổng thu nhập
+            decimal tongThuNhap = await yeuCaus
+                .Where(y => y.TrangThaiHienTai == "HoanThanh")
+                .SumAsync(y => y.ChiPhiThucTe ?? 0);
+
+            // 5.2 Đơn chờ nhận
+            var dichVuIds = nv.IdDichVus.Select(d => d.IdDichVu).ToList();
+            int donChoNhan = await _context.YeucauCuuhos.CountAsync(y => 
+                y.TrangThaiHienTai == "TiepNhan" && 
+                y.IdNhanVien == null && 
+                dichVuIds.Contains(y.IdDichVu));
+
+            // 6. Đánh giá trung bình
+            var danhGias = _context.Danhgia.Where(d => d.IdNhanVien == id);
+            double danhGiaTrungBinh = 0;
+            if (await danhGias.AnyAsync())
+            {
+                danhGiaTrungBinh = await danhGias.AverageAsync(d => (double)d.SoSao);
+            }
+
+            return Ok(new
+            {
+                tongDonHomNay,
+                donChoNhan,
+                donDangXuLy,
+                donHoanThanh,
+                thuNhapHomNay,
+                thuNhapThang,
+                tongThuNhap,
+                danhGiaTrungBinh = Math.Round(danhGiaTrungBinh, 1)
+            });
         }
 
         // GET /api/NhanVien/{id}/reviews

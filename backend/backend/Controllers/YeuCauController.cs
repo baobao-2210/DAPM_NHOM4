@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using backend.Models;
 
@@ -37,8 +37,7 @@ namespace backend.Controllers
                 return NotFound(new { message = "Không tìm thấy nhân viên" });
 
             var dichVuIds = nhanVien.IdDichVus.Select(d => d.IdDichVu).ToList();
-            var phuongXaIds = nhanVien.IdPhuongXas.Select(p => p.IdPhuongXa).ToList();
-
+            // Bỏ điều kiện phuongXaIds.Contains(y.IdPhuongXa) để dễ test cho tài khoản mới chưa có phường
             var list = await _context.YeucauCuuhos
                 .Include(y => y.IdKhachHangNavigation)
                     .ThenInclude(kh => kh.IdTaiKhoanNavigation)
@@ -51,8 +50,7 @@ namespace backend.Controllers
                 .Where(y =>
                     y.TrangThaiHienTai == "TiepNhan" &&
                     y.IdNhanVien == null &&
-                    dichVuIds.Contains(y.IdDichVu) &&
-                    phuongXaIds.Contains(y.IdPhuongXa))
+                    dichVuIds.Contains(y.IdDichVu))
                 .OrderByDescending(y => y.NgayTao)
                 .Select(y => new
                 {
@@ -274,13 +272,23 @@ namespace backend.Controllers
             yc.IdNhanVien = dto.IdNhanVien;
             yc.TrangThaiHienTai = "DangXuLy";
 
+            // Ghi nhận thêm trạng thái DaNhan (Đã nhận đơn) vào lịch sử
+            _context.LichSuTrangThaiYeuCaus.Add(new LichSuTrangThaiYeuCau
+            {
+                IdYeuCau = id,
+                IdNhanVien = dto.IdNhanVien,
+                TrangThai = "DaNhan",
+                GhiChu = "Nhân viên đã nhận đơn và chuẩn bị di chuyển",
+                ThoiGianCapNhat = DateTime.Now.AddSeconds(1)
+            });
+
             // --- Thông báo khách hàng ---
             var tenNV = nhanVien.IdTaiKhoanNavigation?.HoTen ?? "Nhân viên cứu hộ";
             _context.Thongbaos.Add(new Thongbao
             {
                 IdTaiKhoanNhan = yc.IdKhachHangNavigation.IdTaiKhoan,
                 TieuDe = "Đã có nhân viên nhận đơn",
-                NoiDung = $"Nhân viên {tenNV} đã nhận yêu cầu cứu hộ và đang di chuyển đến vị trí của bạn.",
+                NoiDung = $"Nhân viên {tenNV} đã nhận yêu cầu cứu hộ và chuẩn bị di chuyển đến vị trí của bạn.",
                 Loai = "CongViec",
                 RefType = "YeuCau",
                 ThoiGian = DateTime.Now
@@ -298,9 +306,9 @@ namespace backend.Controllers
         [HttpPut("{id}/status")]
         public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateStatusDto dto)
         {
-            var validStatus = new[] { "DangDen", "DangSua", "DangKiemTra" };
+            var validStatus = new[] { "DaNhan", "DangDen", "DaDen", "DangSua" };
             if (!validStatus.Contains(dto.TrangThai))
-                return BadRequest(new { message = "Chỉ chấp nhận: DangDen | DangSua | DangKiemTra" });
+                return BadRequest(new { message = "Chỉ chấp nhận: DaNhan | DangDen | DaDen | DangSua" });
 
             var yc = await _context.YeucauCuuhos
                 .Include(y => y.IdKhachHangNavigation)
@@ -326,9 +334,10 @@ namespace backend.Controllers
             // Thông báo khách hàng
             var noiDungTB = dto.TrangThai switch
             {
-                "DangDen" => "Nhân viên đang trên đường đến vị trí của bạn.",
+                "DaNhan" => "Nhân viên đã nhận yêu cầu và đang chuẩn bị khởi hành.",
+                "DangDen" => "Nhân viên đang trên đường di chuyển đến vị trí của bạn.",
+                "DaDen" => "Nhân viên đã đến nơi. Vui lòng chú ý điện thoại.",
                 "DangSua" => "Nhân viên đang tiến hành sửa chữa / cứu hộ.",
-                "DangKiemTra" => "Nhân viên đang kiểm tra và chuẩn bị hoàn thành.",
                 _ => "Trạng thái cứu hộ đã được cập nhật."
             };
             _context.Thongbaos.Add(new Thongbao
@@ -401,7 +410,7 @@ namespace backend.Controllers
     public class UpdateStatusDto
     {
         public int IdNhanVien { get; set; }
-        /// <summary>DangDen | DangSua | DangKiemTra</summary>
+        /// <summary>DaNhan | DangDen | DaDen | DangSua</summary>
         public string TrangThai { get; set; } = string.Empty;
         public string? GhiChu { get; set; }
     }

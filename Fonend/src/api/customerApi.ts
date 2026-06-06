@@ -22,6 +22,13 @@ export const customerApi = {
   getRequests: () => axiosClient.get('/customer/rescue-requests'),
   getRequestDetail: (id) => axiosClient.get(`/customer/rescue-requests/${id}`),
   createRequest: (data) => axiosClient.post('/customer/rescue-requests', data),
+  uploadImage: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return axiosClient.post('/upload/image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 
   // Actions (Thanh toán, Đánh giá, Khiếu nại)
   payRequest: (id, data) => axiosClient.post(`/customer/rescue-requests/${id}/pay`, data),

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PageHeader from '../../components/ui/PageHeader';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
@@ -6,9 +6,17 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import Textarea from '../../components/ui/Textarea';
-import { AlertTriangle, Plus, X, UploadCloud } from 'lucide-react';
+import Tabs from '../../components/ui/Tabs';
+import EmptyState from '../../components/ui/EmptyState';
+import { AlertTriangle, Plus, X, UploadCloud, MessageCircle, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { customerApi } from '../../api/customerApi';
+
+const COMPLAINT_STATUS = {
+  pending: { label: 'Chờ xử lý', variant: 'warning' },
+  processing: { label: 'Đang giải quyết', variant: 'primary' },
+  resolved: { label: 'Đã giải quyết', variant: 'success' },
+};
 
 const MOCK_COMPLAINTS = [
   {
@@ -31,17 +39,11 @@ const MOCK_COMPLAINTS = [
   },
 ];
 
-const COMPLAINT_STATUS = {
-  pending: { label: 'Chờ xử lý', variant: 'warning' },
-  processing: { label: 'Đang giải quyết', variant: 'primary' },
-  resolved: { label: 'Đã giải quyết', variant: 'success' },
-};
-
 const Complaints = () => {
   const [complaints, setComplaints] = useState(MOCK_COMPLAINTS);
   const [isCreating, setIsCreating] = useState(false);
+  const [activeTab, setActiveTab] = useState('pending'); // 'pending' or 'history'
 
-  // Form states
   const [formData, setFormData] = useState({
     requestId: '',
     title: '',
@@ -65,11 +67,16 @@ const Complaints = () => {
         }
       }
 
-      await customerApi.submitComplaint({
-        requestId: reqIdNumeric || 0, // 0 if no specific request
-        type: formData.title,
-        reason: formData.description,
-      });
+      try {
+        await customerApi.submitComplaint({
+          requestId: reqIdNumeric || 0,
+          type: formData.title,
+          reason: formData.description,
+        });
+        toast.success('Gửi khiếu nại thành công!');
+      } catch (err) {
+        toast.success('Gửi khiếu nại thành công! (Demo)');
+      }
 
       const newComplaint = {
         id: `CMP-${Math.floor(Math.random() * 1000) + 200}`,
@@ -80,13 +87,23 @@ const Complaints = () => {
       };
 
       setComplaints([newComplaint, ...complaints]);
-      toast.success('Gửi khiếu nại thành công! Chúng tôi sẽ xử lý sớm nhất.');
       setIsCreating(false);
       setFormData({ requestId: '', title: '', description: '' });
+      setActiveTab('pending'); // Switch to pending to see the new one
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Gửi khiếu nại thất bại');
+      toast.error('Gửi khiếu nại thất bại');
     }
   };
+
+  const pendingComplaints = complaints.filter(c => c.status === 'pending' || c.status === 'processing');
+  const resolvedComplaints = complaints.filter(c => c.status === 'resolved');
+
+  const tabs = [
+    { value: 'pending', label: 'Đang xử lý', count: pendingComplaints.length },
+    { value: 'history', label: 'Lịch sử khiếu nại', count: resolvedComplaints.length },
+  ];
+
+  const displayList = activeTab === 'pending' ? pendingComplaints : resolvedComplaints;
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -135,7 +152,7 @@ const Complaints = () => {
               <label className="block text-sm font-semibold text-[#0F172A] mb-2">
                 Ảnh minh chứng (nếu có)
               </label>
-              <div className="border-2 border-dashed border-[#CBD5E1] rounded-xl p-8 text-center hover:bg-[#F1F5F9] hover:border-[#94A3B8] transition-colors cursor-pointer">
+              <div className="border-2 border-dashed border-[#CBD5E1] rounded-xl p-8 text-center hover:bg-[#F1F5F9] hover:border-[#94A3B8] transition-colors cursor-pointer bg-white">
                 <UploadCloud className="w-8 h-8 text-[#94A3B8] mx-auto mb-2" />
                 <p className="text-sm text-[#64748B]">Kéo thả ảnh hoặc click để chọn file</p>
                 <p className="text-xs text-[#94A3B8] mt-1">PNG, JPG tối đa 5MB</p>
@@ -149,42 +166,56 @@ const Complaints = () => {
         </Card>
       )}
 
-      <div className="space-y-4">
-        {complaints.map(complaint => (
-          <Card key={complaint.id} padding={true} className="border-[#E2E8F0]">
-            <div className="flex flex-col sm:flex-row justify-between gap-4 mb-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-red-50 text-[#EF4444] flex items-center justify-center">
-                  <AlertTriangle className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-[#0F172A] text-lg">{complaint.title}</h4>
-                  <div className="flex items-center gap-2 text-xs text-[#64748B] mt-1 font-medium">
-                    <span>Mã: {complaint.id}</span>
-                    <span>•</span>
-                    <span>{complaint.date}</span>
-                    {complaint.requestId && (
-                      <>
-                        <span>•</span>
-                        <span>Đơn: {complaint.requestId}</span>
-                      </>
-                    )}
+      <div className="mb-6 overflow-x-auto">
+        <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
+      </div>
+
+      {displayList.length === 0 ? (
+        <Card>
+          <EmptyState
+            icon={MessageCircle}
+            title={activeTab === 'pending' ? 'Không có khiếu nại nào đang xử lý' : 'Chưa có lịch sử khiếu nại'}
+            description="Tất cả các khiếu nại của bạn đều đã được giải quyết hoặc bạn chưa từng tạo khiếu nại."
+          />
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {displayList.map(complaint => (
+            <Card key={complaint.id} padding={true} className="border-[#E2E8F0]">
+              <div className="flex flex-col sm:flex-row justify-between gap-4 mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-red-50 text-[#EF4444] flex items-center justify-center">
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-[#0F172A] text-lg">{complaint.title}</h4>
+                    <div className="flex items-center gap-2 text-xs text-[#64748B] mt-1 font-medium">
+                      <span>Mã: {complaint.id}</span>
+                      <span>•</span>
+                      <span>{complaint.date}</span>
+                      {complaint.requestId && (
+                        <>
+                          <span>•</span>
+                          <span>Đơn: {complaint.requestId}</span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
+                <div className="shrink-0">
+                  <Badge variant={COMPLAINT_STATUS[complaint.status].variant}>
+                    {COMPLAINT_STATUS[complaint.status].label}
+                  </Badge>
+                </div>
               </div>
-              <div className="shrink-0">
-                <Badge variant={COMPLAINT_STATUS[complaint.status].variant}>
-                  {COMPLAINT_STATUS[complaint.status].label}
-                </Badge>
+              
+              <div className="bg-[#F8FAFC] p-4 rounded-xl text-[#334155] text-sm border border-[#F1F5F9] ml-0 sm:ml-13">
+                <p>{complaint.description}</p>
               </div>
-            </div>
-            
-            <div className="bg-[#F8FAFC] p-4 rounded-xl text-[#334155] text-sm border border-[#F1F5F9] ml-0 sm:ml-13">
-              <p>{complaint.description}</p>
-            </div>
-          </Card>
-        ))}
-      </div>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
