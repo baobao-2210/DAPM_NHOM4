@@ -5,7 +5,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { customerApi } from '../../api/customerApi';
 import toast from 'react-hot-toast';
-import { MapPin, Navigation, Car, Wrench, FileText, Send, ChevronLeft, ChevronRight, Clock, Image as ImageIcon, X } from 'lucide-react';
+import { MapPin, Navigation, Car, Layers, FileText, Send, ChevronLeft, ChevronRight, Clock, Image as ImageIcon, X } from 'lucide-react';
 import PageHeader from '../../components/ui/PageHeader';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -39,6 +39,23 @@ const MapClickHandler = ({ onLocationSelect }) => {
     click: (e) => onLocationSelect(e.latlng.lat, e.latlng.lng),
   });
   return null;
+};
+
+const getServiceImage = (name) => {
+  if (!name) return '/images/services/service_sua_xe_tai_cho.png';
+  const n = name.toLowerCase();
+  if (n.includes('kích bình') && n.includes('xe máy')) return '/images/services/service_kich_binh_xe_may.png';
+  if (n.includes('kích bình') && n.includes('ô tô')) return '/images/services/service_kich_binh_oto.png';
+  if (n.includes('kích bình')) return '/images/services/service_kich_binh_oto.png';
+  if (n.includes('vá lốp')) return '/images/services/service_va_lop_xe_may.png';
+  if (n.includes('kéo xe') && n.includes('ô tô')) return '/images/services/service_keo_xe_oto.png';
+  if (n.includes('kéo xe') && n.includes('tải')) return '/images/services/service_keo_xe_tai.png';
+  if (n.includes('kéo xe')) return '/images/services/service_keo_xe_oto.png';
+  if (n.includes('thay khóa') || n.includes('mở khóa')) return '/images/services/service_mo_khoa_oto.png';
+  if (n.includes('tiếp nhiên liệu')) return '/images/services/service_tiep_nhien_lieu.png';
+  if (n.includes('thay lốp')) return '/images/services/service_thay_lop_oto.png';
+  if (n.includes('sửa xe') || n.includes('cơ khí')) return '/images/services/service_sua_xe_tai_cho.png';
+  return '/images/services/service_sua_xe_tai_cho.png'; // default
 };
 
 const STEPS = ['Chọn dịch vụ', 'Chọn xe', 'Chọn vị trí', 'Mô tả & Ảnh', 'Xác nhận'];
@@ -209,7 +226,7 @@ const CreateRescueRequest = () => {
           <Card>
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] flex items-center justify-center">
-                <Wrench className="w-5 h-5 text-[#1D4ED8]" />
+                <Layers className="w-5 h-5 text-[#1D4ED8]" />
               </div>
               <h2 className="text-base font-bold text-[#0F172A]">Chọn dịch vụ <span className="text-[#EF4444]">*</span></h2>
             </div>
@@ -220,15 +237,16 @@ const CreateRescueRequest = () => {
               </div>
             ) : services.length === 0 ? (
               <EmptyState
-                icon={Wrench}
+                icon={Layers}
                 title="Không có dịch vụ"
                 description="Hiện chưa có dịch vụ nào khả dụng"
               />
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {services.map(s => {
                   const sId = s._id || s.idDichVu;
                   const sName = s.name || s.tenDichVu;
+                  const isSelected = String(form.serviceId) === String(sId);
                   return (
                     <div
                       key={sId}
@@ -236,17 +254,37 @@ const CreateRescueRequest = () => {
                         setForm(p => ({ ...p, serviceId: sId }));
                         handleNext();
                       }}
-                      className={`flex items-start gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all hover:shadow-md ${
-                        String(form.serviceId) === String(sId)
-                          ? 'border-[#1D4ED8] bg-[#EFF6FF]'
-                          : 'border-[#E2E8F0] bg-white hover:border-[#1D4ED8]/50'
+                      className={`relative flex flex-col bg-white rounded-2xl cursor-pointer transition-all duration-300 overflow-hidden group ${
+                        isSelected
+                          ? 'border-2 border-[#1D4ED8] shadow-lg shadow-blue-500/20 ring-2 ring-blue-100 scale-[1.02]'
+                          : 'border border-[#E2E8F0] hover:shadow-xl hover:-translate-y-1 hover:border-[#1D4ED8]/50'
                       }`}
                     >
-                      <div className="text-2xl bg-white w-12 h-12 rounded-xl flex items-center justify-center shadow-sm border border-[#E2E8F0] flex-shrink-0">{s.icon || '🔧'}</div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-[#0F172A]">{sName}</p>
-                        {s.description && <p className="text-xs text-[#64748B] mt-1 leading-relaxed line-clamp-2">{s.description}</p>}
-                        {s.price && <p className="text-sm font-bold text-[#1D4ED8] mt-2">{s.price.toLocaleString('vi-VN')}đ</p>}
+                      <div className="relative h-32 w-full bg-gray-100 overflow-hidden">
+                        <img 
+                          src={getServiceImage(sName)} 
+                          alt={sName} 
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                          onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/400x300/1D4ED8/FFFFFF/png?text=Rescue'; }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                        {isSelected && (
+                          <div className="absolute top-2 right-2 w-6 h-6 bg-[#1D4ED8] rounded-full flex items-center justify-center shadow-md">
+                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                        )}
+                        <h3 className="absolute bottom-3 left-3 right-3 text-white font-bold drop-shadow-md text-sm leading-tight">{sName}</h3>
+                      </div>
+                      <div className="p-4 flex flex-col flex-grow bg-white">
+                        {s.description && <p className="text-xs text-[#64748B] mb-3 line-clamp-2 leading-relaxed flex-grow">{s.description}</p>}
+                        <div className="flex items-center justify-between mt-auto">
+                          <span className="text-[10px] text-[#94A3B8] font-bold uppercase tracking-wider">Phí dự kiến</span>
+                          <span className={`text-sm font-black ${isSelected ? 'text-[#1D4ED8]' : 'text-[#F59E0B]'}`}>
+                            {s.price ? `${s.price.toLocaleString('vi-VN')}đ` : 'Liên hệ'}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   );
@@ -422,8 +460,29 @@ const CreateRescueRequest = () => {
 
             <Card.Body>
               <div className="space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-6 pb-5 border-b border-[#E2E8F0]">
+                  <span className="text-xs text-[#64748B] font-semibold sm:w-1/3 flex-shrink-0 uppercase tracking-wide">Dịch vụ</span>
+                  <div className="sm:w-2/3">
+                    {selectedService ? (
+                      <div className="flex items-center gap-3 bg-[#F8FAFC] p-2 rounded-xl border border-[#E2E8F0]">
+                        <img 
+                          src={getServiceImage(selectedService.name || selectedService.tenDichVu)} 
+                          alt="Service" 
+                          className="w-12 h-12 rounded-lg object-cover shadow-sm"
+                          onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100/1D4ED8/FFFFFF/png?text=Service'; }}
+                        />
+                        <div>
+                          <p className="text-sm text-[#0F172A] font-bold">{selectedService.name || selectedService.tenDichVu}</p>
+                          <p className="text-xs text-[#1D4ED8] font-semibold mt-0.5">{selectedService.price ? `${selectedService.price.toLocaleString('vi-VN')}đ` : 'Liên hệ'}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-sm text-[#0F172A] font-semibold">—</span>
+                    )}
+                  </div>
+                </div>
+
                 {[
-                  { label: 'Dịch vụ', value: selectedService ? `${selectedService.icon || '🔧'} ${selectedService.name || selectedService.tenDichVu}` : '—' },
                   { label: 'Xe', value: selectedVehicle ? `🚗 ${selectedVehicle.brand} ${selectedVehicle.model} - ${selectedVehicle.licensePlate}` : 'Chưa chọn' },
                   { label: 'Địa chỉ', value: form.address || '—' },
                   { label: 'Mô tả sự cố', value: form.description || '—' },
@@ -487,3 +546,7 @@ const CreateRescueRequest = () => {
 };
 
 export default CreateRescueRequest;
+
+// Force Vite reload
+
+// Force Vite reload lower case

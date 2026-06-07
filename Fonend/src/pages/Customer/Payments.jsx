@@ -70,13 +70,27 @@ const Payments = () => {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card className="bg-[#1D4ED8] text-white">
-          <div className="flex items-center gap-3 mb-2">
-            <Wallet className="w-5 h-5 text-white/80" />
-            <span className="text-white/80 font-medium text-sm uppercase tracking-wider">Tổng đã chi tiêu</span>
-          </div>
-          <p className="text-3xl font-bold">{formatCurrency(totalSpent)}</p>
-        </Card>
+      <Card
+  variant="default"
+  className="mb-8 bg-[#1D4ED8] border-[#abbff5] text-white relative overflow-hidden"
+>
+  <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/4" />
+  <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#FBBF24]/10 rounded-full translate-y-1/2 -translate-x-1/4" />
+
+  <div className="relative z-10 flex items-center justify-between">
+    <div>
+      <p className="text-black/80 text-sm font-medium mb-1">
+        Tổng đã chi tiêu
+      </p>
+
+      <p className="text-3xl md:text-4xl font-bold text-black">
+        {formatCurrency(totalSpent || 0)}
+      </p>
+    </div>
+
+    <div className="text-5xl opacity-80">💳</div>
+  </div>
+</Card>
         <Card className="bg-white border-[#E2E8F0]">
           <div className="flex items-center gap-3 mb-2">
             <Clock className="w-5 h-5 text-[#F59E0B]" />

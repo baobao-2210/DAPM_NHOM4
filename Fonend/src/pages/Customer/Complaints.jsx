@@ -65,7 +65,41 @@ const Complaints = () => {
     requestId: '',
     title: '',
     description: '',
+    imageUrl: '',
   });
+  
+  const [imagePreview, setImagePreview] = useState(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (ev) => setImagePreview(ev.target.result);
+    reader.readAsDataURL(file);
+
+    setUploading(true);
+    try {
+      if (customerApi.uploadImage) {
+        const res = await customerApi.uploadImage(file);
+        setFormData(p => ({ ...p, imageUrl: res.data?.Url || res.data?.url || '' }));
+        toast.success('Tải ảnh lên thành công');
+      } else {
+        toast.success('Đã đính kèm ảnh (Chưa có API upload)');
+      }
+    } catch (err) {
+      toast.error('Không thể tải ảnh lên. Vui lòng thử lại.');
+      setImagePreview(null);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = () => {
+    setImagePreview(null);
+    setFormData(p => ({ ...p, imageUrl: '' }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -85,6 +119,7 @@ const Complaints = () => {
         requestId: reqIdNumeric,
         type: formData.title,
         reason: formData.description,
+        imageUrl: formData.imageUrl,
       });
       toast.success('Gửi khiếu nại thành công!');
 
@@ -93,7 +128,8 @@ const Complaints = () => {
       setComplaints(res.data?.data || []);
 
       setIsCreating(false);
-      setFormData({ requestId: '', title: '', description: '' });
+      setFormData({ requestId: '', title: '', description: '', imageUrl: '' });
+      setImagePreview(null);
       setActiveTab('pending'); // Switch to pending to see the new one
     } catch (err) {
       toast.error('Gửi khiếu nại thất bại: ' + (err.response?.data?.message || err.message));
@@ -159,11 +195,32 @@ const Complaints = () => {
               <label className="block text-sm font-semibold text-[#0F172A] mb-2">
                 Ảnh minh chứng (nếu có)
               </label>
-              <div className="border-2 border-dashed border-[#CBD5E1] rounded-xl p-8 text-center hover:bg-[#F1F5F9] hover:border-[#94A3B8] transition-colors cursor-pointer bg-white">
-                <UploadCloud className="w-8 h-8 text-[#94A3B8] mx-auto mb-2" />
-                <p className="text-sm text-[#64748B]">Kéo thả ảnh hoặc click để chọn file</p>
-                <p className="text-xs text-[#94A3B8] mt-1">PNG, JPG tối đa 5MB</p>
-              </div>
+              {!imagePreview ? (
+                <label className="block border-2 border-dashed border-[#CBD5E1] rounded-xl p-8 text-center hover:bg-[#F1F5F9] hover:border-[#94A3B8] transition-colors cursor-pointer bg-white">
+                  <UploadCloud className="w-8 h-8 text-[#94A3B8] mx-auto mb-2" />
+                  <p className="text-sm text-[#64748B]">Kéo thả ảnh hoặc click để chọn file</p>
+                  <p className="text-xs text-[#94A3B8] mt-1">PNG, JPG tối đa 5MB</p>
+                  <input type="file" className="hidden" accept="image/png, image/jpeg, image/jpg" onChange={handleImageUpload} />
+                </label>
+              ) : (
+                <div className="relative inline-block border border-[#E2E8F0] rounded-xl overflow-hidden p-2 bg-white">
+                  <div className="relative">
+                    <img src={imagePreview} alt="Preview" className="h-32 w-auto rounded-lg object-cover" />
+                    <button
+                      type="button"
+                      onClick={removeImage}
+                      className="absolute top-1 right-1 w-6 h-6 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition-colors backdrop-blur-sm"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                    {uploading && (
+                      <div className="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center rounded-lg">
+                        <div className="w-5 h-5 border-2 border-[#1D4ED8] border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end pt-4">
@@ -217,7 +274,17 @@ const Complaints = () => {
               </div>
               
               <div className="bg-[#F8FAFC] p-4 rounded-xl text-[#334155] text-sm border border-[#F1F5F9] ml-0 sm:ml-13">
-                <p>{complaint.description}</p>
+                <p>{complaint.description || complaint.reason}</p>
+                {(complaint.imageUrl || complaint.image) && (
+                  <div className="mt-3">
+                    <img 
+                      src={complaint.imageUrl || complaint.image} 
+                      alt="Minh chứng" 
+                      className="h-24 w-auto rounded-lg object-cover border border-[#E2E8F0] shadow-sm hover:scale-[1.02] transition-transform cursor-pointer"
+                      onClick={() => window.open(complaint.imageUrl || complaint.image, '_blank')}
+                    />
+                  </div>
+                )}
               </div>
             </Card>
           ))}

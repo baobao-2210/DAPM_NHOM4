@@ -11,10 +11,27 @@ import Input from '../../components/ui/Input';
 import Textarea from '../../components/ui/Textarea';
 import Badge from '../../components/ui/Badge';
 import EmptyState from '../../components/ui/EmptyState';
-import { Wrench, Plus, Edit3, Trash2 } from 'lucide-react';
+import { Layers, Plus, Edit3, Trash2 } from 'lucide-react';
 
 const EMPTY_FORM = { name: '', description: '', price: '', category: '', icon: '🔧' };
 const ICONS = ['🔧', '🚛', '🔋', '🛞', '⛽', '🔑', '🚗', '🛠️', '⚡'];
+
+const getServiceImage = (name) => {
+  if (!name) return '/images/services/service_sua_xe_tai_cho.png';
+  const n = name.toLowerCase();
+  if (n.includes('kích bình') && n.includes('xe máy')) return '/images/services/service_kich_binh_xe_may.png';
+  if (n.includes('kích bình') && n.includes('ô tô')) return '/images/services/service_kich_binh_oto.png';
+  if (n.includes('kích bình')) return '/images/services/service_kich_binh_oto.png';
+  if (n.includes('vá lốp')) return '/images/services/service_va_lop_xe_may.png';
+  if (n.includes('kéo xe') && n.includes('ô tô')) return '/images/services/service_keo_xe_oto.png';
+  if (n.includes('kéo xe') && n.includes('tải')) return '/images/services/service_keo_xe_tai.png';
+  if (n.includes('kéo xe')) return '/images/services/service_keo_xe_oto.png';
+  if (n.includes('thay khóa') || n.includes('mở khóa')) return '/images/services/service_mo_khoa_oto.png';
+  if (n.includes('tiếp nhiên liệu')) return '/images/services/service_tiep_nhien_lieu.png';
+  if (n.includes('thay lốp')) return '/images/services/service_thay_lop_oto.png';
+  if (n.includes('sửa xe') || n.includes('cơ khí')) return '/images/services/service_sua_xe_tai_cho.png';
+  return '/images/services/service_sua_xe_tai_cho.png'; // default
+};
 
 const ManageServices = () => {
   const [services, setServices] = useState([]);
@@ -100,7 +117,7 @@ const ManageServices = () => {
             <div className="col-span-1 md:col-span-2 lg:col-span-3">
               <Card variant="default">
                 <EmptyState
-                  icon={Wrench}
+                  icon={Layers}
                   title="Không có dịch vụ nào"
                   description="Thử tìm kiếm với từ khóa khác hoặc thêm dịch vụ mới"
                   actionLabel="Thêm dịch vụ"
@@ -109,27 +126,54 @@ const ManageServices = () => {
               </Card>
             </div>
           ) : filtered.map(s => (
-            <Card key={s._id} variant="interactive" className="group">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 rounded-xl bg-[#EFF6FF] flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
-                  {s.icon || '🔧'}
+            <div key={s._id} className="bg-white rounded-3xl border border-[#E2E8F0] shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 flex flex-col group overflow-hidden relative">
+              {/* Image Cover */}
+              <div className="relative h-48 w-full overflow-hidden bg-gray-100">
+                <img 
+                  src={getServiceImage(s.name)} 
+                  alt={s.name} 
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                  onError={(e) => {
+                    e.target.onerror = null; 
+                    e.target.src = 'https://placehold.co/400x300/1D4ED8/FFFFFF/png?text=RescueCar';
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A]/90 via-[#0F172A]/30 to-transparent transition-opacity duration-300" />
+                
+                {s.category && (
+                  <span className="absolute top-4 right-4 px-3 py-1 bg-white/90 backdrop-blur-md text-[#1D4ED8] text-[10px] font-extrabold uppercase tracking-wider rounded-full shadow-lg">
+                    {s.category}
+                  </span>
+                )}
+                
+                {/* Admin Actions */}
+                <div className="absolute top-4 left-4 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                  <button onClick={() => openEdit(s)} className="w-8 h-8 bg-white/90 text-[#1D4ED8] rounded-full flex items-center justify-center hover:bg-[#1D4ED8] hover:text-white transition-colors shadow-md backdrop-blur-md">
+                    <Edit3 className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => handleDelete(s._id)} className="w-8 h-8 bg-white/90 text-[#EF4444] rounded-full flex items-center justify-center hover:bg-[#EF4444] hover:text-white transition-colors shadow-md backdrop-blur-md">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
-                <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button variant="ghost" size="sm" icon={Edit3} onClick={() => openEdit(s)} />
-                  <Button variant="ghost" size="sm" icon={Trash2} onClick={() => handleDelete(s._id)} className="hover:text-[#EF4444] hover:bg-[#FEF2F2]" />
+
+                <div className="absolute bottom-4 left-5 right-5">
+                  <h3 className="text-xl font-bold text-white drop-shadow-md leading-tight">{s.name}</h3>
                 </div>
               </div>
-              {s.category && (
-                <Badge variant="primary" size="sm" className="mb-2">{s.category}</Badge>
-              )}
-              <h3 className="text-[#0F172A] font-bold text-base mb-1.5">{s.name}</h3>
-              <p className="text-[#64748B] text-sm mb-4 line-clamp-2 leading-relaxed">{s.description}</p>
-              <div className="pt-4 border-t border-[#E2E8F0]">
-                <p className="text-[#FBBF24] font-bold text-base">
-                  {s.price ? s.price.toLocaleString('vi-VN') + 'đ' : 'Liên hệ'}
+
+              {/* Content */}
+              <div className="p-5 flex flex-col flex-grow">
+                <p className="text-[#64748B] text-sm leading-relaxed mb-4 flex-grow line-clamp-2">
+                  {s.description}
                 </p>
+                <div className="pt-4 border-t border-[#E2E8F0] flex items-center justify-between">
+                  <span className="text-[10px] text-[#94A3B8] font-bold uppercase tracking-wider">Mức giá</span>
+                  <p className="text-[#FBBF24] font-black text-lg">
+                    {s.price ? s.price.toLocaleString('vi-VN') + 'đ' : 'Liên hệ'}
+                  </p>
+                </div>
               </div>
-            </Card>
+            </div>
           ))}
         </div>
       )}

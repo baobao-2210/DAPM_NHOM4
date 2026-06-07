@@ -58,6 +58,22 @@ const testimonials = [
   },
 ];
 
+const getServiceImage = (name) => {
+  const n = name.toLowerCase();
+  if (n.includes('kích bình') && n.includes('xe máy')) return '/images/services/service_kich_binh_xe_may.png';
+  if (n.includes('kích bình') && n.includes('ô tô')) return '/images/services/service_kich_binh_oto.png';
+  if (n.includes('kích bình')) return '/images/services/service_kich_binh_oto.png';
+  if (n.includes('vá lốp')) return '/images/services/service_va_lop_xe_may.png';
+  if (n.includes('kéo xe') && n.includes('ô tô')) return '/images/services/service_keo_xe_oto.png';
+  if (n.includes('kéo xe') && n.includes('tải')) return '/images/services/service_keo_xe_tai.png';
+  if (n.includes('kéo xe')) return '/images/services/service_keo_xe_oto.png';
+  if (n.includes('thay khóa') || n.includes('mở khóa')) return '/images/services/service_mo_khoa_oto.png';
+  if (n.includes('tiếp nhiên liệu')) return '/images/services/service_tiep_nhien_lieu.png';
+  if (n.includes('thay lốp')) return '/images/services/service_thay_lop_oto.png';
+  if (n.includes('sửa xe') || n.includes('cơ khí')) return '/images/services/service_sua_xe_tai_cho.png';
+  return '/images/services/service_sua_xe_tai_cho.png'; // default
+};
+
 const Home = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -292,32 +308,52 @@ const Home = () => {
             <p className="text-[#64748B] text-lg">Đầy đủ các dịch vụ cứu hộ và hỗ trợ xe</p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {services.map(({ _id, icon, name, description, price, category }) => (
-              <div key={_id || name} className="bg-white rounded-2xl p-6 border border-[#E2E8F0] shadow-sm hover:shadow-md transition-all group">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-[#EFF6FF] flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
-                    {icon || '🔧'}
-                  </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {services.map(({ _id, name, description, price, category }) => (
+              <div key={_id || name} className="bg-white rounded-3xl border border-[#E2E8F0] shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 flex flex-col group overflow-hidden relative text-left">
+                {/* Image Cover */}
+                <div className="relative h-56 w-full overflow-hidden bg-gray-100">
+                  <img 
+                    src={getServiceImage(name)} 
+                    alt={name} 
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                    onError={(e) => {
+                      e.target.onerror = null; 
+                      e.target.src = 'https://placehold.co/600x400/1D4ED8/FFFFFF/png?text=RescueCar';
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A]/90 via-[#0F172A]/30 to-transparent transition-opacity duration-300" />
+                  
                   {category && (
-                    <span className="px-3 py-1 bg-[#EFF6FF] text-[#1D4ED8] text-xs font-bold rounded-full border border-[#1D4ED8]/10">
+                    <span className="absolute top-4 right-4 px-4 py-1.5 bg-white/90 backdrop-blur-md text-[#1D4ED8] text-[11px] font-extrabold uppercase tracking-wider rounded-full shadow-lg">
                       {category}
                     </span>
                   )}
-                </div>
-                <h3 className="text-[#0F172A] font-bold text-lg mb-2">{name}</h3>
-                <p className="text-[#64748B] text-sm leading-relaxed mb-4">{description}</p>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-[#94A3B8] text-xs">Từ</span>
-                    <p className="text-[#FBBF24] font-bold text-lg">{price ? `${price.toLocaleString('vi-VN')}đ` : 'Liên hệ'}</p>
+                  <div className="absolute bottom-4 left-5 right-5">
+                    <h3 className="text-2xl font-bold text-white drop-shadow-md">{name}</h3>
                   </div>
-                  <button
-                    onClick={handleRescue}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-[#1D4ED8] text-white text-sm font-semibold rounded-xl hover:bg-[#1E40AF] transition-colors"
-                  >
-                    Đặt ngay <ArrowRight className="w-3 h-3" />
-                  </button>
+                </div>
+
+                {/* Content */}
+                <div className="p-6 flex flex-col flex-grow">
+                  <p className="text-[#475569] text-sm leading-relaxed mb-6 flex-grow line-clamp-3">
+                    {description}
+                  </p>
+                  
+                  <div className="pt-5 border-t border-gray-100 flex items-center justify-between">
+                    <div>
+                      <p className="text-[#94A3B8] text-[10px] uppercase tracking-wider font-extrabold mb-1">Giá tham khảo</p>
+                      <p className="text-[#F59E0B] font-black text-2xl drop-shadow-sm">
+                        {price ? `${price.toLocaleString('vi-VN')}đ` : 'Liên hệ'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleRescue}
+                      className="w-14 h-14 bg-gradient-to-br from-[#1D4ED8] to-[#2563EB] text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:shadow-blue-500/50 group-hover:scale-105 transition-all duration-300"
+                    >
+                      <ArrowRight className="w-6 h-6 transform group-hover:translate-x-1 transition-transform duration-300" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
