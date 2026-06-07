@@ -22,7 +22,9 @@ export const adminApi = {
   updateStaff: (id, data) => axiosClient.put(`/admin/staff/${id}`, data),
   deleteStaff: (id) => axiosClient.delete(`/admin/staff/${id}`),
 
-  // Areas
+  // Areas & Cities
+  getCities: () => axiosClient.get('/admin/cities'),
+  createCity: (data) => axiosClient.post('/admin/cities', data),
   getAreas: () => axiosClient.get('/admin/areas'),
   createArea: (data) => axiosClient.post('/admin/areas', data),
   updateArea: (id, data) => axiosClient.put(`/admin/areas/${id}`, data),
@@ -31,4 +33,8 @@ export const adminApi = {
   // Requests
   getRequests: () => axiosClient.get('/admin/rescue-requests'),
   assignRequest: (id, data) => axiosClient.put(`/admin/rescue-requests/${id}/assign`, data),
+
+  // Complaints
+  getComplaints: () => axiosClient.get('/admin/complaints'),
+  updateComplaintStatus: (id, data) => axiosClient.put(`/admin/complaints/${id}/status`, data),
 };

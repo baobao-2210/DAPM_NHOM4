@@ -30,7 +30,7 @@ export default function StaffLoginPage() {
     setIsLoading(false);
 
     if (result.success) {
-      const role = localStorage.getItem('access_token') ? JSON.parse(atob(localStorage.getItem('access_token')!.split('.')[1])).role : null;
+      const role = sessionStorage.getItem('access_token') ? JSON.parse(atob(sessionStorage.getItem('access_token')!.split('.')[1])).role : null;
       if (role === 'admin') {
         navigate('/admin', { replace: true });
       } else {

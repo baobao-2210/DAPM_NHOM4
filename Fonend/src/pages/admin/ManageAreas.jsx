@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { adminApi } from '../../api/adminApi';
 import toast from 'react-hot-toast';
 import Modal from '../../components/Modal';
@@ -8,10 +8,12 @@ import PageHeader from '../../components/ui/PageHeader';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
+import Select from '../../components/ui/Select';
 import { Map, Plus, ChevronRight, ChevronDown, Pencil, Trash2 } from 'lucide-react';
 
 const ManageAreas = () => {
   const [areas, setAreas] = useState([]);
+  const [cities, setCities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedNodes, setExpandedNodes] = useState([]);
   const [modal, setModal] = useState(null);
@@ -20,24 +22,39 @@ const ManageAreas = () => {
   const [selectedArea, setSelectedArea] = useState(null);
 
   const fetchAreas = () => {
-    adminApi.getAreas()
-      .then(res => {
-        const data = res.data?.data || [];
-        // Group by city
-        const grouped = data.reduce((acc, curr) => {
-          const cityId = curr.cityId;
-          if (!acc[cityId]) {
-            acc[cityId] = { id: cityId, name: curr.city, children: [] };
+    Promise.all([adminApi.getCities(), adminApi.getAreas()])
+      .then(([citiesRes, areasRes]) => {
+        const citiesData = citiesRes.data?.data || [];
+        setCities(citiesData);
+        
+        const data = areasRes.data?.data || [];
+        
+        // Initialize grouped with all cities
+        const grouped = {};
+        citiesData.forEach(c => {
+          grouped[c.id] = { id: c.id, name: c.name, children: [] };
+        });
+        
+        // Add areas to their respective cities
+        data.forEach(curr => {
+          if (grouped[curr.cityId]) {
+            grouped[curr.cityId].children.push(curr);
+          } else {
+            grouped[curr.cityId] = { id: curr.cityId, name: curr.city, children: [curr] };
           }
-          acc[cityId].children.push(curr);
-          return acc;
-        }, {});
-        setAreas(Object.values(grouped));
-        if (expandedNodes.length === 0 && Object.keys(grouped).length > 0) {
-          setExpandedNodes([Object.values(grouped)[0].id]);
+        });
+        
+        const sortedAreas = Object.values(grouped);
+        
+        setAreas(sortedAreas);
+        if (expandedNodes.length === 0 && sortedAreas.length > 0) {
+          setExpandedNodes([sortedAreas[0].id]);
         }
       })
-      .catch(() => toast.error('Lỗi tải danh sách khu vực'))
+      .catch((err) => {
+        console.error("fetchAreas error:", err);
+        toast.error('Lỗi tải danh sách khu vực');
+      })
       .finally(() => setLoading(false));
   };
 
@@ -54,6 +71,11 @@ const ManageAreas = () => {
     setModal('create');
   };
 
+  const openCreateCity = () => {
+    setForm({ name: '', code: '' });
+    setModal('createCity');
+  };
+
   const openEdit = (area) => {
     setSelectedCity(area.cityId);
     setForm({ name: area.name, code: area.code || '' });
@@ -65,7 +87,10 @@ const ManageAreas = () => {
     e.preventDefault();
     if (!form.name) return toast.error('Vui lòng nhập tên khu vực');
     try {
-      if (modal === 'create') {
+      if (modal === 'createCity') {
+        await adminApi.createCity({ name: form.name });
+        toast.success('Thêm tỉnh thành thành công');
+      } else if (modal === 'create') {
         await adminApi.createArea({ ...form, cityId: selectedCity });
         toast.success('Thêm khu vực thành công');
       } else {
@@ -96,7 +121,10 @@ const ManageAreas = () => {
         title="Quản lý khu vực hoạt động"
         description="Thiết lập các tỉnh thành, quận huyện và phân bổ nhân sự cứu hộ."
         actions={
-          <Button icon={Plus} onClick={() => openCreate(1)}>Thêm khu vực mới</Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={openCreateCity}>Thêm Tỉnh/Thành</Button>
+            <Button icon={Plus} onClick={() => openCreate(cities.length > 0 ? cities[0].id : 1)}>Thêm khu vực mới</Button>
+          </div>
         }
       />
 
@@ -175,10 +203,23 @@ const ManageAreas = () => {
         </Card>
       )}
 
-      <Modal isOpen={!!modal} onClose={() => setModal(null)} title={modal === 'create' ? 'Thêm khu vực' : 'Sửa khu vực'}>
+      <Modal isOpen={!!modal} onClose={() => setModal(null)} title={modal === 'createCity' ? 'Thêm Tỉnh/Thành phố' : modal === 'create' ? 'Thêm khu vực (Phường/Xã)' : 'Sửa khu vực'}>
         <form onSubmit={handleSave} className="space-y-4">
-          <Input label="Mã khu vực" value={form.code} onChange={e => setForm({...form, code: e.target.value})} placeholder="PX-01" />
-          <Input label="Tên khu vực (Phường/Xã)" required value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Phường Bến Nghé" />
+          {modal !== 'createCity' && (
+            <div className="space-y-1">
+              <label className="text-sm font-semibold text-[#0F172A]">Tỉnh / Thành phố</label>
+              <Select 
+                value={selectedCity} 
+                onChange={e => setSelectedCity(Number(e.target.value))}
+                disabled={modal === 'edit'}
+                options={cities.map(city => ({ value: city.id, label: city.name }))}
+              />
+            </div>
+          )}
+          {modal !== 'createCity' && (
+            <Input label="Mã khu vực" value={form.code} onChange={e => setForm({...form, code: e.target.value})} placeholder="VD: PX-01" />
+          )}
+          <Input label={modal === 'createCity' ? 'Tên Tỉnh/Thành phố' : 'Tên khu vực (Phường/Xã)'} required value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder={modal === 'createCity' ? "VD: Cần Thơ" : "VD: Phường Bến Nghé"} />
           <div className="flex gap-3 pt-4">
             <Button type="submit" variant="primary" fullWidth>Lưu</Button>
             <Button type="button" variant="outline" onClick={() => setModal(null)}>Hủy</Button>
@@ -189,4 +230,40 @@ const ManageAreas = () => {
   );
 };
 
-export default ManageAreas;
+// ErrorBoundary
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null, info: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, info) {
+    console.error("ErrorBoundary caught error:", error, info);
+    this.setState({ info });
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-10 text-red-500">
+          <h1 className="text-2xl font-bold mb-4">React Crashed!</h1>
+          <p className="font-bold">Error:</p>
+          <pre className="bg-red-50 p-4 rounded overflow-auto">{this.state.error?.toString()}</pre>
+          <p className="font-bold mt-4">Component Stack:</p>
+          <pre className="bg-red-50 p-4 rounded overflow-auto">{this.state.info?.componentStack}</pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const ManageAreasWrapper = () => (
+  <ErrorBoundary>
+    <ManageAreas />
+  </ErrorBoundary>
+);
+
+export default ManageAreasWrapper;

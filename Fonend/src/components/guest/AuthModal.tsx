@@ -40,7 +40,7 @@ export default function AuthModal({ defaultMode = 'login', onClose, redirectTo =
     const result = await login({ emailOrPhone, password });
     setLoading(false);
     if (result.success) {
-      localStorage.setItem('user', JSON.stringify({ emailOrPhone, loginTime: new Date().toISOString() }));
+      sessionStorage.setItem('user', JSON.stringify({ emailOrPhone, loginTime: new Date().toISOString() }));
       onClose();
       navigate(redirectTo);
     } else {

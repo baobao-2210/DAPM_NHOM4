@@ -40,9 +40,26 @@ const MOCK_COMPLAINTS = [
 ];
 
 const Complaints = () => {
-  const [complaints, setComplaints] = useState(MOCK_COMPLAINTS);
+  const [complaints, setComplaints] = useState([]);
+  const [requests, setRequests] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
   const [activeTab, setActiveTab] = useState('pending'); // 'pending' or 'history'
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [complaintsRes, requestsRes] = await Promise.all([
+          customerApi.getComplaints(),
+          customerApi.getRequests()
+        ]);
+        setComplaints(complaintsRes.data?.data || []);
+        setRequests(requestsRes.data?.data || []);
+      } catch (err) {
+        console.error('Lỗi tải dữ liệu:', err);
+      }
+    };
+    loadData();
+  }, []);
 
   const [formData, setFormData] = useState({
     requestId: '',
@@ -52,46 +69,34 @@ const Complaints = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.title || !formData.description) {
-      toast.error('Vui lòng điền đầy đủ thông tin');
+    if (!formData.requestId || !formData.title || !formData.description) {
+      toast.error('Vui lòng chọn đơn cứu hộ và điền đầy đủ thông tin');
+      return;
+    }
+
+    let reqIdNumeric = parseInt(formData.requestId.replace('REQ-', ''));
+    if (isNaN(reqIdNumeric)) {
+      toast.error('Mã đơn không hợp lệ');
       return;
     }
 
     try {
-      let reqIdNumeric = undefined;
-      if (formData.requestId) {
-        reqIdNumeric = parseInt(formData.requestId.replace('REQ-', ''));
-        if (isNaN(reqIdNumeric)) {
-          toast.error('Mã đơn không hợp lệ');
-          return;
-        }
-      }
+      await customerApi.submitComplaint({
+        requestId: reqIdNumeric,
+        type: formData.title,
+        reason: formData.description,
+      });
+      toast.success('Gửi khiếu nại thành công!');
 
-      try {
-        await customerApi.submitComplaint({
-          requestId: reqIdNumeric || 0,
-          type: formData.title,
-          reason: formData.description,
-        });
-        toast.success('Gửi khiếu nại thành công!');
-      } catch (err) {
-        toast.success('Gửi khiếu nại thành công! (Demo)');
-      }
+      // Reload complaints
+      const res = await customerApi.getComplaints();
+      setComplaints(res.data?.data || []);
 
-      const newComplaint = {
-        id: `CMP-${Math.floor(Math.random() * 1000) + 200}`,
-        ...formData,
-        status: 'pending',
-        date: new Date().toLocaleDateString('vi-VN'),
-        image: null,
-      };
-
-      setComplaints([newComplaint, ...complaints]);
       setIsCreating(false);
       setFormData({ requestId: '', title: '', description: '' });
       setActiveTab('pending'); // Switch to pending to see the new one
     } catch (err) {
-      toast.error('Gửi khiếu nại thất bại');
+      toast.error('Gửi khiếu nại thất bại: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -123,13 +128,15 @@ const Complaints = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Select
-                label="Chọn đơn cứu hộ (Tùy chọn)"
+                label="Chọn đơn cứu hộ *"
                 value={formData.requestId}
                 onChange={(e) => setFormData({ ...formData, requestId: e.target.value })}
                 options={[
                   { value: '', label: '-- Chọn đơn cứu hộ liên quan --' },
-                  { value: 'REQ-1234', label: 'REQ-1234 - Kéo xe cứu hộ (25/05)' },
-                  { value: 'REQ-1235', label: 'REQ-1235 - Kích bình (24/05)' },
+                  ...requests.map(req => ({
+                    value: `REQ-${req._id}`,
+                    label: `REQ-${String(req._id).padStart(3, '0')} - ${req.service} (${new Date(req.date).toLocaleDateString('vi-VN')})`
+                  }))
                 ]}
               />
               <Input

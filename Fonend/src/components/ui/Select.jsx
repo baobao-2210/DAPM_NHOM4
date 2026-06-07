@@ -11,7 +11,7 @@ const Select = forwardRef(({
   required = false,
   ...props
 }, ref) => {
-  const selectId = id || label?.toLowerCase().replace(/\s+/g, '-');
+  const selectId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
 
   return (
     <div className={`space-y-1.5 ${className}`}>

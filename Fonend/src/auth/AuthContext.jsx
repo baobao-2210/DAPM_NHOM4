@@ -9,8 +9,8 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
+    const token = sessionStorage.getItem('token');
+    const savedUser = sessionStorage.getItem('user');
     if (token && savedUser) {
       try {
         const parsedUser = JSON.parse(savedUser);
@@ -19,8 +19,8 @@ export const AuthProvider = ({ children }) => {
         if (parsedUser.role === 'admin') parsedUser.role = 'admin';
         setUser(parsedUser);
       } catch {
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
+        sessionStorage.removeItem('user');
+        sessionStorage.removeItem('token');
       }
     }
     setLoading(false);
@@ -37,8 +37,8 @@ export const AuthProvider = ({ children }) => {
       if (userData.role === 'nhanvien') userData.role = 'staff';
       if (userData.role === 'admin') userData.role = 'admin';
 
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(userData));
+      sessionStorage.setItem('token', token);
+      sessionStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
       return userData;
     } catch (err) {
@@ -60,14 +60,14 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     setUser(null);
   };
 
   const updateUser = (newData) => {
     const updated = { ...user, ...newData };
-    localStorage.setItem('user', JSON.stringify(updated));
+    sessionStorage.setItem('user', JSON.stringify(updated));
     setUser(updated);
   };
 

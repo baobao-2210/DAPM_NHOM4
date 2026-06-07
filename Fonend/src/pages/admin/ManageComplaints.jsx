@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PageHeader from '../../components/ui/PageHeader';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
@@ -7,39 +7,8 @@ import SearchBox from '../../components/ui/SearchBox';
 import Select from '../../components/ui/Select';
 import { AlertTriangle, Clock, CheckCircle2, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
-
-const MOCK_COMPLAINTS = [
-  {
-    id: 'CMP-101',
-    customer: 'Trần Khách Hàng',
-    customerPhone: '0901234567',
-    requestId: 'REQ-1234',
-    title: 'Nhân viên đến muộn 30 phút',
-    description: 'Nhân viên A hẹn 15p nhưng 45p mới tới, thái độ không tốt.',
-    status: 'pending',
-    date: '25/05/2026 14:30',
-  },
-  {
-    id: 'CMP-100',
-    customer: 'Lê Văn Khách',
-    customerPhone: '0987654321',
-    requestId: 'REQ-1200',
-    title: 'Phí dịch vụ thu cao hơn báo giá',
-    description: 'Trên app báo 200k nhưng nhân viên thu 250k.',
-    status: 'processing',
-    date: '20/05/2026 09:15',
-  },
-  {
-    id: 'CMP-099',
-    customer: 'Nguyễn Văn C',
-    customerPhone: '0911223344',
-    requestId: 'REQ-1150',
-    title: 'Sửa không dứt điểm',
-    description: 'Mới đi được 2km lại bị hỏng tiếp chỗ cũ.',
-    status: 'resolved',
-    date: '15/05/2026 16:45',
-  },
-];
+import { adminApi } from '../../api/adminApi';
+import Loading from '../../components/Loading';
 
 const STATUS_COLORS = {
   pending: { label: 'Chờ xử lý', variant: 'warning', icon: AlertTriangle },
@@ -48,14 +17,66 @@ const STATUS_COLORS = {
 };
 
 const ManageComplaints = () => {
-  const [complaints, setComplaints] = useState(MOCK_COMPLAINTS);
+  const [complaints, setComplaints] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [expandedId, setExpandedId] = useState(null);
+  
+  // State to hold temporary resolution text
+  const [resultTexts, setResultTexts] = useState({});
 
-  const handleStatusChange = (id, newStatus) => {
-    setComplaints(complaints.map(c => c.id === id ? { ...c, status: newStatus } : c));
-    toast.success(`Đã cập nhật trạng thái khiếu nại ${id}`);
+  const loadComplaints = async () => {
+    try {
+      const res = await adminApi.getComplaints();
+      const rawData = res.data?.data || [];
+      const mappedData = rawData.map(c => ({
+        id: `KN${String(c._id).padStart(3, '0')}`,
+        realId: c._id,
+        title: c.loaiKhieuNai || 'Khiếu nại dịch vụ',
+        customer: c.customerName || 'Khách hàng',
+        customerPhone: c.customerPhone || 'Không có số',
+        requestId: `YC${String(c.requestId).padStart(3, '0')}`,
+        description: c.reason || 'Không có nội dung',
+        date: new Date(c.date).toLocaleDateString('vi-VN'),
+        status: c.status?.toLowerCase() === 'investigating' ? 'processing' : (c.status?.toLowerCase() || 'pending'),
+        result: c.resolution || ''
+      }));
+      
+      setComplaints(mappedData);
+      
+      // Init resultTexts
+      const initTexts = {};
+      mappedData.forEach(c => {
+        initTexts[c.realId] = c.result || '';
+      });
+      setResultTexts(initTexts);
+    } catch (error) {
+      console.error(error);
+      toast.error('Lỗi khi tải danh sách khiếu nại');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadComplaints();
+  }, []);
+
+  const handleStatusChange = async (realId, newStatus) => {
+    try {
+      const backendStatus = newStatus === 'resolved' ? 'Resolved' : (newStatus === 'processing' ? 'Investigating' : 'Pending');
+      const payload = { status: backendStatus };
+      if (newStatus === 'resolved') {
+        payload.resolution = resultTexts[realId] || '';
+      }
+      await adminApi.updateComplaintStatus(realId, payload);
+      toast.success('Cập nhật trạng thái khiếu nại thành công');
+      loadComplaints();
+    } catch (error) {
+      console.error(error);
+      toast.error('Lỗi khi cập nhật trạng thái');
+    }
   };
 
   const filteredComplaints = complaints.filter(c => {
@@ -65,6 +86,8 @@ const ManageComplaints = () => {
     const matchesStatus = statusFilter === '' || c.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  if (loading) return <Loading fullscreen={false} />;
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -167,20 +190,32 @@ const ManageComplaints = () => {
                       </p>
                     </div>
 
+                    {/* Result Input Area */}
+                    <div className="mb-6">
+                      <p className="text-sm font-bold text-[#0F172A] mb-2">Kết quả xử lý:</p>
+                      <textarea
+                        className="w-full p-3 border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1D4ED8] text-sm"
+                        rows="3"
+                        placeholder="Nhập ghi chú xử lý khiếu nại (hiển thị cho khách hàng)..."
+                        value={resultTexts[complaint.realId] || ''}
+                        onChange={(e) => setResultTexts({...resultTexts, [complaint.realId]: e.target.value})}
+                      />
+                    </div>
+
                     <div className="flex flex-col sm:flex-row items-center gap-3 pt-4 border-t border-[#E2E8F0]">
                       <span className="text-sm font-semibold text-[#0F172A] mr-2">Cập nhật trạng thái:</span>
                       {complaint.status !== 'pending' && (
-                        <Button size="sm" variant="outline" onClick={() => handleStatusChange(complaint.id, 'pending')}>
+                        <Button size="sm" variant="outline" onClick={() => handleStatusChange(complaint.realId, 'pending')}>
                           Chờ xử lý
                         </Button>
                       )}
                       {complaint.status !== 'processing' && (
-                        <Button size="sm" variant="outline" onClick={() => handleStatusChange(complaint.id, 'processing')} className="border-blue-500 text-blue-600 hover:bg-blue-50">
+                        <Button size="sm" variant="outline" onClick={() => handleStatusChange(complaint.realId, 'processing')} className="border-blue-500 text-blue-600 hover:bg-blue-50">
                           Đang giải quyết
                         </Button>
                       )}
                       {complaint.status !== 'resolved' && (
-                        <Button size="sm" onClick={() => handleStatusChange(complaint.id, 'resolved')} className="bg-[#22C55E] hover:bg-[#16A34A] text-white">
+                        <Button size="sm" onClick={() => handleStatusChange(complaint.realId, 'resolved')} className="bg-[#22C55E] hover:bg-[#16A34A] text-white">
                           Hoàn tất giải quyết
                         </Button>
                       )}

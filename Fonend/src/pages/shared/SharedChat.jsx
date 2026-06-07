@@ -3,23 +3,18 @@ import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { Send, ArrowLeft, Phone, Info } from 'lucide-react';
 import Card from '../../components/ui/Card';
-
-const MOCK_MESSAGES = [
-  { id: 1, sender: 'customer', text: 'Chào anh, anh sắp tới nơi chưa ạ?', time: '14:30', isRead: true },
-  { id: 2, sender: 'staff', text: 'Chào bạn, mình đang trên đường, khoảng 5 phút nữa sẽ tới nhé.', time: '14:31', isRead: true },
-  { id: 3, sender: 'customer', text: 'Vâng, tôi đang đứng ở chỗ cây xăng ngã tư.', time: '14:32', isRead: true },
-];
+import { staffApi } from '../../api/staffApi';
 
 const SharedChat = () => {
   const { requestId } = useParams();
   const { user } = useAuth();
-  const [messages, setMessages] = useState(MOCK_MESSAGES);
+  const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef(null);
 
   const isCustomer = user?.role === 'customer';
-  const otherPartyName = isCustomer ? 'Nguyễn Văn A (Nhân viên)' : 'Trần Khách Hàng';
-  const myRoleKey = isCustomer ? 'customer' : 'staff';
+  const otherPartyName = isCustomer ? 'Nhân viên cứu hộ' : 'Khách hàng';
+  const idTaiKhoan = user?._id || 0;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -29,32 +24,34 @@ const SharedChat = () => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = (e) => {
-    e.preventDefault();
-    if (!inputText.trim()) return;
-
-    const newMessage = {
-      id: messages.length + 1,
-      sender: myRoleKey,
-      text: inputText,
-      time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-      isRead: false,
+  useEffect(() => {
+    const loadMessages = async () => {
+      if (!requestId || !idTaiKhoan) return;
+      try {
+        const res = await staffApi.getMessages(requestId, idTaiKhoan);
+        setMessages(res.data || []);
+      } catch (err) {
+        console.error('Lỗi tải tin nhắn:', err);
+      }
     };
-
-    setMessages([...messages, newMessage]);
-    setInputText('');
     
-    // Simulate auto reply if I'm customer
-    if (isCustomer) {
-      setTimeout(() => {
-        setMessages(prev => [...prev, {
-          id: prev.length + 1,
-          sender: 'staff',
-          text: 'Vâng, mình đã nhận thông tin. Đợi mình chút nhé!',
-          time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-          isRead: true,
-        }]);
-      }, 2000);
+    loadMessages();
+    const interval = setInterval(loadMessages, 3000); // Poll every 3 seconds
+    return () => clearInterval(interval);
+  }, [requestId, idTaiKhoan]);
+
+  const handleSend = async (e) => {
+    e.preventDefault();
+    if (!inputText.trim() || !idTaiKhoan) return;
+
+    const textToSend = inputText.trim();
+    setInputText('');
+
+    try {
+      const res = await staffApi.sendMessage(requestId, idTaiKhoan, textToSend);
+      setMessages(prev => [...prev, res.data]);
+    } catch (err) {
+      console.error('Lỗi gửi tin nhắn:', err);
     }
   };
 
@@ -102,8 +99,13 @@ const SharedChat = () => {
         {/* Chat Messages */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#F8FAFC]">
           <div className="space-y-4">
+            {messages.length === 0 && (
+              <div className="text-center text-sm text-[#94A3B8] my-8">
+                Chưa có tin nhắn nào. Bắt đầu hội thoại ngay!
+              </div>
+            )}
             {messages.map((msg) => {
-              const isMine = msg.sender === myRoleKey;
+              const isMine = msg.isMyMessage;
               return (
                 <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[75%] sm:max-w-[60%] flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
@@ -114,13 +116,12 @@ const SharedChat = () => {
                           : 'bg-white border border-[#E2E8F0] text-[#0F172A] rounded-tl-sm shadow-sm'
                       }`}
                     >
-                      {msg.text}
+                      {msg.noiDung}
                     </div>
                     <div className="flex items-center gap-1 mt-1 px-1">
-                      <span className="text-[10px] text-[#94A3B8]">{msg.time}</span>
-                      {isMine && msg.isRead && (
-                        <span className="text-[10px] text-[#1D4ED8] font-bold">Đã xem</span>
-                      )}
+                      <span className="text-[10px] text-[#94A3B8]">
+                        {new Date(msg.thoiGianGui).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </div>
                   </div>
                 </div>

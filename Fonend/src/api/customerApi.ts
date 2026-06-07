@@ -34,4 +34,5 @@ export const customerApi = {
   payRequest: (id, data) => axiosClient.post(`/customer/rescue-requests/${id}/pay`, data),
   reviewRequest: (id, data) => axiosClient.post(`/customer/rescue-requests/${id}/review`, data),
   submitComplaint: (data) => axiosClient.post('/customer/complaints', data),
+  getComplaints: () => axiosClient.get('/customer/complaints'),
 };

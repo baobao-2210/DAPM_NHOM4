@@ -43,15 +43,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const logout = () => {
-    localStorage.removeItem('access_token');
+    sessionStorage.removeItem('access_token');
     setToken(null);
     setUser(null);
     setRole(null);
   };
 
   useEffect(() => {
-    // Khi khởi động app, đọc token từ localStorage
-    const savedToken = localStorage.getItem('access_token');
+    // Khi khởi động app, đọc token từ sessionStorage
+    const savedToken = sessionStorage.getItem('access_token');
     if (savedToken) {
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -83,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (response && response.token && response.user) {
-        localStorage.setItem('access_token', response.token);
+        sessionStorage.setItem('access_token', response.token);
         setToken(response.token);
 
         let mappedRole = response.user.role.toLowerCase();

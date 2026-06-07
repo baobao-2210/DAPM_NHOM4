@@ -13,30 +13,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 
-const monthlyRequestsData = [
-  { name: 'Th1', requests: 45 },
-  { name: 'Th2', requests: 52 },
-  { name: 'Th3', requests: 61 },
-  { name: 'Th4', requests: 58 },
-  { name: 'Th5', requests: 73 },
-  { name: 'Th6', requests: 80 },
-];
-
-const monthlyRevenueData = [
-  { name: 'Th1', revenue: 12500000 },
-  { name: 'Th2', revenue: 14200000 },
-  { name: 'Th3', revenue: 16800000 },
-  { name: 'Th4', revenue: 15300000 },
-  { name: 'Th5', revenue: 18900000 },
-  { name: 'Th6', revenue: 21500000 },
-];
-
-const requestStatusData = [
-  { name: 'Chờ xử lý', value: 12, color: '#FBBF24' },
-  { name: 'Đã phân công', value: 8, color: '#1D4ED8' },
-  { name: 'Đang xử lý', value: 6, color: '#3B82F6' },
-  { name: 'Hoàn thành', value: 318, color: '#22C55E' },
-];
+// Remove static MOCK DATA constants
 
 const statusBadgeVariant = {
   Pending: 'warning',
@@ -58,7 +35,24 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     adminApi.getDashboardStats()
-      .then(res => setStats(res.data?.data || res.data))
+      .then(res => {
+        const data = res.data?.data || res.data;
+        // Transform data for charts
+        if (data.monthlyRequestsData) {
+          data.monthlyRequestsData = data.monthlyRequestsData.map(d => ({ name: `T${d.month || d.Month}`, requests: d.count || d.Count }));
+        }
+        if (data.monthlyRevenueData) {
+          data.monthlyRevenueData = data.monthlyRevenueData.map(d => ({ name: `T${d.month || d.Month}`, revenue: d.revenue || d.Revenue }));
+        }
+        if (data.requestStatusData && !Array.isArray(data.requestStatusData)) {
+          data.requestStatusData = [
+            { name: 'Chờ xử lý', value: data.requestStatusData.pending || 0, color: '#FBBF24' },
+            { name: 'Đang xử lý', value: data.requestStatusData.ongoing || 0, color: '#1D4ED8' },
+            { name: 'Hoàn thành', value: data.requestStatusData.completed || 0, color: '#22C55E' }
+          ];
+        }
+        setStats(data);
+      })
       .catch((err) => {
         console.error(err);
         toast.error('Không thể tải dữ liệu thống kê');
@@ -141,14 +135,18 @@ const AdminDashboard = () => {
 
       {/* Revenue Banner */}
       {stats?.revenue && (
-        <Card variant="default" className="mb-8 bg-[#1D4ED8] border-[#1D4ED8] text-white relative overflow-hidden">
+      <Card variant="default" className="mb-8 bg-[#1D4ED8] border-[#1D4ED8] text-white relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/4" />
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#FBBF24]/10 rounded-full translate-y-1/2 -translate-x-1/4" />
           <div className="relative z-10 flex items-center justify-between">
             <div>
-              <p className="text-white/80 text-sm font-medium mb-1">Doanh thu ước tính</p>
-              <p className="text-3xl md:text-4xl font-bold text-white">
-                {stats.revenue.toLocaleString('vi-VN')} <span className="text-[#FBBF24] text-2xl">đ</span>
+              <p className="text-blue-700 text-sm font-medium mb-1">
+                  Doanh thu ước tính
+              </p>
+
+              <p className="text-3xl md:text-4xl font-bold text-blue-900">
+              {stats.revenue.toLocaleString('vi-VN')}
+                  <span className="text-blue-600 text-2xl ml-1">đ</span>
               </p>
             </div>
             <div className="text-5xl opacity-80">💰</div>
@@ -165,7 +163,7 @@ const AdminDashboard = () => {
           </Card.Header>
           <Card.Body>
             <ResponsiveContainer width="100%" height={280}>
-              <LineChart data={monthlyRequestsData}>
+              <LineChart data={stats?.monthlyRequestsData || []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                 <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748B' }} axisLine={{ stroke: '#E2E8F0' }} />
                 <YAxis tick={{ fontSize: 12, fill: '#64748B' }} axisLine={{ stroke: '#E2E8F0' }} />
@@ -198,7 +196,7 @@ const AdminDashboard = () => {
           </Card.Header>
           <Card.Body>
             <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={monthlyRevenueData}>
+              <BarChart data={stats?.monthlyRevenueData || []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                 <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748B' }} axisLine={{ stroke: '#E2E8F0' }} />
                 <YAxis
@@ -237,7 +235,7 @@ const AdminDashboard = () => {
             <ResponsiveContainer width="100%" height={260}>
               <PieChart>
                 <Pie
-                  data={requestStatusData}
+                  data={stats?.requestStatusData || []}
                   cx="50%"
                   cy="50%"
                   innerRadius={55}
@@ -245,7 +243,7 @@ const AdminDashboard = () => {
                   paddingAngle={4}
                   dataKey="value"
                 >
-                  {requestStatusData.map((entry, index) => (
+                  {(stats?.requestStatusData || []).map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>

@@ -52,6 +52,20 @@ namespace backend.Controllers
                 })
                 .ToListAsync();
 
+            var currentYear = DateTime.Now.Year;
+
+            var monthlyRequestsData = await _context.YeucauCuuhos
+                .Where(y => y.NgayTao != null && y.NgayTao.Value.Year == currentYear)
+                .GroupBy(y => y.NgayTao.Value.Month)
+                .Select(g => new { Month = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            var monthlyRevenueData = await _context.Thanhtoans
+                .Where(t => (t.TrangThai == "ThanhCong" || t.TrangThai == "DaThanhToan") && t.ThoiGian != null && t.ThoiGian.Value.Year == currentYear)
+                .GroupBy(t => t.ThoiGian.Value.Month)
+                .Select(g => new { Month = g.Key, Revenue = g.Sum(x => x.SoTien ?? 0) })
+                .ToListAsync();
+
             return Ok(new
             {
                 totalCustomers,
@@ -62,7 +76,10 @@ namespace backend.Controllers
                 ongoingRequests,
                 completedRequests,
                 revenue,
-                recentRequests
+                recentRequests,
+                monthlyRequestsData,
+                monthlyRevenueData,
+                requestStatusData = new { pending = pendingRequests, ongoing = ongoingRequests, completed = completedRequests }
             });
         }
 
@@ -327,11 +344,17 @@ namespace backend.Controllers
                 .Select(y => new
                 {
                     _id = y.IdYeuCau,
-                    customerName = y.IdKhachHangNavigation.IdTaiKhoanNavigation.HoTen,
-                    staffName = y.IdNhanVienNavigation != null ? y.IdNhanVienNavigation.IdTaiKhoanNavigation.HoTen : "Chưa có",
-                    service = y.IdDichVuNavigation.TenDichVu,
+                    customer = new { name = y.IdKhachHangNavigation.IdTaiKhoanNavigation.HoTen },
+                    staff = new { 
+                        _id = y.IdNhanVienNavigation != null ? y.IdNhanVienNavigation.IdNhanVien : 0, 
+                        name = y.IdNhanVienNavigation != null ? y.IdNhanVienNavigation.IdTaiKhoanNavigation.HoTen : "" 
+                    },
+                    service = new { name = y.IdDichVuNavigation.TenDichVu },
+                    address = y.NoiSuCo,
                     date = y.NgayTao,
-                    status = y.TrangThaiHienTai == "HoanThanh" ? "completed" : (y.TrangThaiHienTai == "DangXuLy" ? "in-progress" : "pending"),
+                    status = y.TrangThaiHienTai == "HoanThanh" ? "Completed" : 
+                             (y.TrangThaiHienTai == "DangXuLy" ? "OnGoing" : 
+                             (y.TrangThaiHienTai == "DaPhanCong" ? "Assigned" : "Pending")),
                     total = y.ChiPhiThucTe > 0 ? y.ChiPhiThucTe : y.ChiPhiDuKien
                 })
                 .ToListAsync();
@@ -387,8 +410,75 @@ namespace backend.Controllers
         }
 
         // ==========================================
-        // QUẢN LÝ KHU VỰC
+        // QUẢN LÝ KHIẾU NẠI
         // ==========================================
+        [HttpGet("complaints")]
+        public async Task<IActionResult> GetComplaints()
+        {
+            var complaints = await _context.Khieunais
+                .Include(k => k.IdYeuCauNavigation).ThenInclude(y => y.IdKhachHangNavigation).ThenInclude(kh => kh.IdTaiKhoanNavigation)
+                .Include(k => k.IdYeuCauNavigation).ThenInclude(y => y.IdNhanVienNavigation).ThenInclude(nv => nv.IdTaiKhoanNavigation)
+                .OrderByDescending(k => k.ThoiGianTao)
+                .Select(k => new
+                {
+                    _id = k.IdKhieuNai,
+                    requestId = k.IdYeuCau,
+                    customerName = k.IdYeuCauNavigation.IdKhachHangNavigation.IdTaiKhoanNavigation.HoTen,
+                    customerPhone = k.IdYeuCauNavigation.IdKhachHangNavigation.IdTaiKhoanNavigation.SoDienThoai,
+                    staffName = k.IdYeuCauNavigation.IdNhanVienNavigation != null ? k.IdYeuCauNavigation.IdNhanVienNavigation.IdTaiKhoanNavigation.HoTen : "Không xác định",
+                    loaiKhieuNai = k.LoaiKhieuNai,
+                    reason = k.NoiDung,
+                    date = k.ThoiGianTao,
+                    status = k.TrangThai == "ChoXuLy" ? "Pending" : (k.TrangThai == "DaGiaiQuyet" ? "Resolved" : "Investigating"),
+                    resolution = k.KetQuaXuLy
+                })
+                .ToListAsync();
+            return Ok(new { data = complaints });
+        }
+
+        [HttpPut("complaints/{id}/status")]
+        public async Task<IActionResult> UpdateComplaint(int id, [FromBody] ComplaintUpdateDto dto)
+        {
+            var complaint = await _context.Khieunais.FindAsync(id);
+            if (complaint == null) return NotFound();
+
+            complaint.TrangThai = dto.Status == "Resolved" ? "DaGiaiQuyet" : (dto.Status == "Investigating" ? "DangGiaiQuyet" : "ChoXuLy");
+            if (!string.IsNullOrEmpty(dto.Resolution))
+            {
+                complaint.KetQuaXuLy = dto.Resolution;
+            }
+            complaint.ThoiGianCapNhat = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Cập nhật khiếu nại thành công" });
+        }
+
+        // ==========================================
+        // QUẢN LÝ TỈNH THÀNH & KHU VỰC
+        // ==========================================
+
+        [HttpGet("cities")]
+        public async Task<IActionResult> GetCities()
+        {
+            var cities = await _context.TinhThanhs
+                .Select(t => new { id = t.IdTinhThanh, name = t.TenTinh })
+                .ToListAsync();
+            return Ok(new { data = cities });
+        }
+
+        [HttpPost("cities")]
+        public async Task<IActionResult> CreateCity([FromBody] CityCreateDto dto)
+        {
+            var city = new TinhThanh
+            {
+                TenTinh = dto.Name,
+                MaTinh = "T-" + new Random().Next(10000, 99999).ToString()
+            };
+            _context.TinhThanhs.Add(city);
+            await _context.SaveChangesAsync();
+            return Ok(new { data = new { id = city.IdTinhThanh, name = city.TenTinh } });
+        }
+
         [HttpGet("areas")]
         public async Task<IActionResult> GetAreas()
         {
@@ -478,5 +568,16 @@ namespace backend.Controllers
         public string Name { get; set; } = string.Empty;
         public string? Code { get; set; }
         public int CityId { get; set; }
+    }
+
+    public class ComplaintUpdateDto
+    {
+        public string Status { get; set; }
+        public string Resolution { get; set; }
+    }
+
+    public class CityCreateDto
+    {
+        public string Name { get; set; }
     }
 }

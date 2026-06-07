@@ -336,6 +336,28 @@ namespace backend.Controllers
             return Ok(new { message = "Đánh giá thành công" });
         }
 
+        [HttpGet("complaints")]
+        public async Task<IActionResult> GetComplaints()
+        {
+            int khId = await GetKhachHangId(GetCurrentUserId());
+            var complaints = await _context.Khieunais
+                .Where(k => k.IdKhachHang == khId)
+                .OrderByDescending(k => k.ThoiGianTao)
+                .Select(k => new
+                {
+                    id = "CMP-" + k.IdKhieuNai,
+                    requestId = "REQ-" + k.IdYeuCau,
+                    title = k.LoaiKhieuNai,
+                    description = k.NoiDung,
+                    status = k.TrangThai == "ChoXuLy" ? "pending" : (k.TrangThai == "DaGiaiQuyet" ? "resolved" : "processing"),
+                    date = k.ThoiGianTao != null ? k.ThoiGianTao.Value.ToString("dd/MM/yyyy") : "",
+                    image = (string)null
+                })
+                .ToListAsync();
+
+            return Ok(new { data = complaints });
+        }
+
         [HttpPost("complaints")]
         public async Task<IActionResult> SubmitComplaint([FromBody] ComplaintDto dto)
         {

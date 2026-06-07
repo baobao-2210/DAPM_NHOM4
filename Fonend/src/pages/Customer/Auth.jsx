@@ -18,7 +18,7 @@ const Auth = ({ initialIsLogin = true }) => {
     if (isLogin) {
       const result = await login(emailOrPhone, password);
       if (result.success) {
-        const token = localStorage.getItem('access_token');
+        const token = sessionStorage.getItem('access_token');
         if (token) {
           try {
             const role = JSON.parse(atob(token.split('.')[1])).role;
